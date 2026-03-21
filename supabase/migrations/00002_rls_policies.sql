@@ -1,130 +1,59 @@
--- 00002_rls_policies.sql
--- Row Level Security — clinic isolation for all tenant-scoped tables
--- Pattern: user must be a member of the clinic to access its data
-
 -- ============================================================
--- ENABLE RLS ON ALL TABLES
+-- GameForge AI — RLS Policies & Indexes
 -- ============================================================
 
-ALTER TABLE clinics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clinic_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE calls ENABLE ROW LEVEL SECURITY;
-ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on all tables
+ALTER TABLE studios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE game_projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 
--- ============================================================
--- CLINICS — owner or member can access
--- ============================================================
+-- ── Studios ──────────────────────────────────────────────────
 
-CREATE POLICY "clinic_owner_access" ON clinics
-  FOR ALL
-  USING (owner_id = auth.uid());
+-- Owner can CRUD their studios
+CREATE POLICY "studio_owner_all" ON studios
+  FOR ALL USING (auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = owner_id);
 
-CREATE POLICY "clinic_member_access" ON clinics
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members
-      WHERE clinic_members.clinic_id = clinics.id
-      AND clinic_members.user_id = auth.uid()
-    )
-  );
+-- ── Game Projects ────────────────────────────────────────────
 
--- ============================================================
--- CLINIC MEMBERS — members can see other members of their clinic
--- ============================================================
-
-CREATE POLICY "clinic_members_isolation" ON clinic_members
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members AS cm
-      WHERE cm.clinic_id = clinic_members.clinic_id
-      AND cm.user_id = auth.uid()
-    )
-  );
-
--- Only owner/admin can manage members
-CREATE POLICY "clinic_members_manage" ON clinic_members
-  FOR INSERT
+-- Studio owner can CRUD their game projects
+CREATE POLICY "game_project_owner_all" ON game_projects
+  FOR ALL USING (
+    studio_id IN (SELECT id FROM studios WHERE owner_id = auth.uid())
+  )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM clinic_members AS cm
-      WHERE cm.clinic_id = clinic_members.clinic_id
-      AND cm.user_id = auth.uid()
-      AND cm.role IN ('owner', 'admin')
-    )
+    studio_id IN (SELECT id FROM studios WHERE owner_id = auth.uid())
   );
 
-CREATE POLICY "clinic_members_delete" ON clinic_members
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members AS cm
-      WHERE cm.clinic_id = clinic_members.clinic_id
-      AND cm.user_id = auth.uid()
-      AND cm.role IN ('owner', 'admin')
-    )
+-- Public game projects readable by all authenticated users
+CREATE POLICY "game_project_public_read" ON game_projects
+  FOR SELECT USING (is_public = true);
+
+-- ── Chat Sessions ────────────────────────────────────────────
+
+-- Studio owner can CRUD their chat sessions
+CREATE POLICY "chat_session_owner_all" ON chat_sessions
+  FOR ALL USING (
+    studio_id IN (SELECT id FROM studios WHERE owner_id = auth.uid())
+  )
+  WITH CHECK (
+    studio_id IN (SELECT id FROM studios WHERE owner_id = auth.uid())
   );
 
--- ============================================================
--- TENANT-SCOPED TABLES — standard clinic isolation pattern
--- ============================================================
+-- ── Leads ────────────────────────────────────────────────────
 
-CREATE POLICY "patients_clinic_isolation" ON patients
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members
-      WHERE clinic_members.clinic_id = patients.clinic_id
-      AND clinic_members.user_id = auth.uid()
-    )
-  );
+-- Anyone can insert leads (public signup)
+CREATE POLICY "leads_insert" ON leads
+  FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "appointments_clinic_isolation" ON appointments
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members
-      WHERE clinic_members.clinic_id = appointments.clinic_id
-      AND clinic_members.user_id = auth.uid()
-    )
-  );
+-- ── Indexes ──────────────────────────────────────────────────
 
-CREATE POLICY "calls_clinic_isolation" ON calls
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members
-      WHERE clinic_members.clinic_id = calls.clinic_id
-      AND clinic_members.user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "campaigns_clinic_isolation" ON campaigns
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members
-      WHERE clinic_members.clinic_id = campaigns.clinic_id
-      AND clinic_members.user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "leads_clinic_isolation" ON leads
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM clinic_members
-      WHERE clinic_members.clinic_id = leads.clinic_id
-      AND clinic_members.user_id = auth.uid()
-    )
-  );
-
--- ============================================================
--- SERVICE ROLE BYPASS
--- The Python voice agent uses the service_role key which bypasses
--- RLS automatically. No additional policies needed for agent writes.
--- ============================================================
+CREATE INDEX idx_studios_owner_id ON studios(owner_id);
+CREATE INDEX idx_game_projects_studio_id ON game_projects(studio_id);
+CREATE INDEX idx_game_projects_status ON game_projects(status);
+CREATE INDEX idx_game_projects_is_public ON game_projects(is_public);
+CREATE INDEX idx_game_projects_genre ON game_projects(genre);
+CREATE INDEX idx_chat_sessions_studio_id ON chat_sessions(studio_id);
+CREATE INDEX idx_chat_sessions_game_project_id ON chat_sessions(game_project_id);
+CREATE INDEX idx_leads_email ON leads(email);
