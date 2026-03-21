@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getClinicContext } from "@/lib/clinic-context";
 import { SignOutButton } from "./SignOutButton";
-import { ReplayTourButton } from "@/features/onboarding/ReplayTourButton";
 
 export async function TopBar() {
   const supabase = await createClient();
@@ -9,13 +7,10 @@ export async function TopBar() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const ctx = await getClinicContext();
-  const clinicName = ctx?.clinic.name ?? "My Clinic";
-
   const displayName =
     user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
-    "User";
+    "Creator";
 
   const initials = displayName
     .split(" ")
@@ -25,28 +20,27 @@ export async function TopBar() {
     .toUpperCase();
 
   return (
-    <header className="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-6 shrink-0">
-      {/* Page context */}
+    <header className="h-16 bg-surface border-b border-neutral-700 flex items-center justify-between px-6 shrink-0">
+      {/* Studio name */}
       <div className="flex items-center gap-3">
-        <span className="text-sm text-neutral-500">
-          {clinicName}
+        <span className="text-sm font-heading text-neutral-300 uppercase">
+          COMMAND CENTER
         </span>
       </div>
 
       {/* User info */}
       <div className="flex items-center gap-4">
-        <ReplayTourButton />
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-xs font-semibold text-primary">
+          <div className="w-8 h-8 rounded-md bg-primary/20 flex items-center justify-center">
+            <span className="text-xs font-semibold text-primary-light">
               {initials}
             </span>
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-neutral-700 leading-tight">
+            <p className="text-sm font-semibold text-neutral-200 leading-tight">
               {displayName}
             </p>
-            <p className="text-xs text-neutral-400 leading-tight">
+            <p className="text-xs text-neutral-500 leading-tight">
               {user?.email}
             </p>
           </div>
