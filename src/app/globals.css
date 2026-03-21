@@ -1,40 +1,45 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand */
-  --color-primary: #4F46E5;
-  --color-primary-light: #818CF8;
-  --color-primary-dark: #3730A3;
-  --color-secondary: #0D9488;
-  --color-secondary-light: #2DD4BF;
-  --color-secondary-dark: #115E59;
-  --color-accent: #06B6D4;
+  /* ── GTA Brand Colors ── */
+  --color-primary: #47761E;         /* Grassfield Green — CTAs, active states */
+  --color-primary-light: #7CFC00;   /* Neon Green — glows, hover, neon accents */
+  --color-primary-dark: #2D4F12;    /* Pressed states */
+  --color-secondary: #FED985;       /* Caramel Yellow — badges, warnings */
+  --color-accent: #F09E71;          /* Kawaii Orange — feature cards, warm accents */
+  --color-accent-blue: #61B5CB;     /* Links, info, AI indicators */
+  --color-accent-purple: #D5A0C4;   /* Community, social features */
 
-  /* Neutrals (Slate) */
-  --color-neutral-50: #F8FAFC;
-  --color-neutral-100: #F1F5F9;
-  --color-neutral-200: #E2E8F0;
-  --color-neutral-300: #CBD5E1;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-500: #64748B;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1E293B;
-  --color-neutral-900: #0F172A;
-  --color-neutral-950: #020617;
+  /* ── Dark Surfaces ── */
+  --color-surface-dark: #0F0F0F;    /* Page backgrounds */
+  --color-surface: #1A1A1A;         /* Cards, sidebar */
+  --color-surface-light: #2A2A2A;   /* Hover, borders */
 
-  /* Semantic */
-  --color-success: #059669;
-  --color-warning: #D97706;
-  --color-error: #E11D48;
-  --color-info: #4F46E5;
+  /* ── Neutrals (Dark-first) ── */
+  --color-neutral-50: #FAFAFA;
+  --color-neutral-100: #F5F5F5;
+  --color-neutral-200: #E5E5E5;
+  --color-neutral-300: #D4D4D4;
+  --color-neutral-400: #A3A3A3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0A0A0A;
 
-  /* Typography */
-  --font-heading: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", sans-serif;
+  /* ── Semantic ── */
+  --color-success: #22C55E;
+  --color-warning: #FED985;
+  --color-error: #FF3131;           /* GTA Red */
+  --color-info: #61B5CB;
+
+  /* ── Typography ── */
+  --font-heading: var(--font-pricedown), "Pricedown", sans-serif;
   --font-body: var(--font-inter), "Inter", sans-serif;
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 
-  /* Font sizes */
+  /* ── Font Sizes ── */
   --text-xs: 12px;
   --text-xs--line-height: 1.5;
   --text-sm: 14px;
@@ -51,182 +56,117 @@
   --text-3xl--line-height: 1.2;
   --text-4xl: 48px;
   --text-4xl--line-height: 1.15;
+  --text-5xl: 64px;
+  --text-5xl--line-height: 1.1;
 
-  /* Border radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  /* ── Angular Border Radii ── */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.06);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1), 0 32px 64px rgba(0, 0, 0, 0.07);
-  --shadow-focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.35);
+  /* ── Neon Glow Shadows ── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
+  --shadow-focus-ring: 0 0 0 3px rgba(124, 252, 0, 0.35);
+  --shadow-neon-green: 0 0 20px rgba(124, 252, 0, 0.4), 0 0 60px rgba(124, 252, 0, 0.15);
+  --shadow-neon-yellow: 0 0 20px rgba(254, 217, 133, 0.4), 0 0 60px rgba(254, 217, 133, 0.15);
+  --shadow-neon-orange: 0 0 20px rgba(240, 158, 113, 0.4), 0 0 60px rgba(240, 158, 113, 0.15);
+  --shadow-neon-blue: 0 0 20px rgba(97, 181, 203, 0.4), 0 0 60px rgba(97, 181, 203, 0.15);
+  --shadow-neon-purple: 0 0 20px rgba(213, 160, 196, 0.4), 0 0 60px rgba(213, 160, 196, 0.15);
 }
+
+/* ── GTA Utility Classes ── */
 
 @layer utilities {
-  .text-gradient-ai {
-    background: linear-gradient(135deg, #818CF8, #06B6D4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .glow-green {
+    box-shadow: 0 0 20px rgba(124, 252, 0, 0.4), 0 0 60px rgba(124, 252, 0, 0.15);
   }
 
-  .glow-primary {
-    box-shadow: 0 0 40px rgba(79, 70, 229, 0.3), 0 0 80px rgba(6, 182, 212, 0.15);
+  .glow-green-hover:hover {
+    box-shadow: 0 0 30px rgba(124, 252, 0, 0.6), 0 0 80px rgba(124, 252, 0, 0.25);
   }
 
-  .glow-primary-hover:hover {
-    box-shadow: 0 0 60px rgba(79, 70, 229, 0.4), 0 0 120px rgba(6, 182, 212, 0.2);
+  .glow-yellow {
+    box-shadow: 0 0 20px rgba(254, 217, 133, 0.4), 0 0 60px rgba(254, 217, 133, 0.15);
   }
 
-  /* ── Attractive CTA button ── */
-  .cta-glow {
-    box-shadow:
-      0 0 20px rgba(79, 70, 229, 0.4),
-      0 0 60px rgba(6, 182, 212, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  .glow-orange {
+    box-shadow: 0 0 20px rgba(240, 158, 113, 0.4), 0 0 60px rgba(240, 158, 113, 0.15);
   }
 
-  .cta-glow:hover {
-    box-shadow:
-      0 0 30px rgba(79, 70, 229, 0.5),
-      0 0 80px rgba(6, 182, 212, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(97, 181, 203, 0.4), 0 0 60px rgba(97, 181, 203, 0.15);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(213, 160, 196, 0.4), 0 0 60px rgba(213, 160, 196, 0.15);
+  }
+
+  .neon-text {
+    text-shadow: 0 0 10px rgba(124, 252, 0, 0.6), 0 0 30px rgba(124, 252, 0, 0.3);
+  }
+
+  .neon-text-yellow {
+    text-shadow: 0 0 10px rgba(254, 217, 133, 0.6), 0 0 30px rgba(254, 217, 133, 0.3);
+  }
+
+  .hud-bracket {
+    position: relative;
+  }
+
+  .hud-bracket::before,
+  .hud-bracket::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-color: rgba(124, 252, 0, 0.5);
+    pointer-events: none;
+  }
+
+  .hud-bracket::before {
+    top: -4px;
+    left: -4px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+    border-color: inherit;
+  }
+
+  .hud-bracket::after {
+    bottom: -4px;
+    right: -4px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+    border-color: inherit;
   }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
+/* ── Animations ── */
 
-@keyframes pulse-glow {
+@keyframes pulse-neon {
   0%, 100% {
-    box-shadow:
-      0 0 20px rgba(79, 70, 229, 0.4),
-      0 0 60px rgba(6, 182, 212, 0.15);
+    box-shadow: 0 0 20px rgba(124, 252, 0, 0.4), 0 0 60px rgba(124, 252, 0, 0.15);
   }
   50% {
-    box-shadow:
-      0 0 30px rgba(79, 70, 229, 0.6),
-      0 0 80px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 0 30px rgba(124, 252, 0, 0.6), 0 0 80px rgba(124, 252, 0, 0.3);
   }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 @layer utilities {
-  .cta-shimmer {
-    background-size: 200% auto;
-    animation: shimmer 3s linear infinite;
+  .animate-pulse-neon {
+    animation: pulse-neon 2.5s ease-in-out infinite;
   }
 
-  .cta-pulse {
-    animation: pulse-glow 2.5s ease-in-out infinite;
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
   }
-}
-
-/* ─── Intro.js Tour Overrides ───────────────────────────────── */
-
-.introjs-tooltip.feltsense-tour-tooltip {
-  font-family: var(--font-body), "Inter", sans-serif;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
-  max-width: 380px;
-  padding: 0;
-}
-
-.feltsense-tour-tooltip .introjs-tooltip-header {
-  padding: 20px 24px 0;
-}
-
-.feltsense-tour-tooltip .introjs-tooltip-title {
-  font-family: var(--font-heading), "Plus Jakarta Sans", sans-serif;
-  font-weight: 600;
-  font-size: 18px;
-  line-height: 1.4;
-  color: #1e293b;
-}
-
-.feltsense-tour-tooltip .introjs-tooltiptext {
-  padding: 12px 24px 20px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #475569;
-}
-
-.feltsense-tour-tooltip .introjs-tooltipbuttons {
-  border-top: 1px solid #e2e8f0;
-  padding: 12px 24px;
-}
-
-.feltsense-tour-tooltip .introjs-button {
-  font-family: var(--font-body), "Inter", sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 8px 16px;
-  text-shadow: none;
-  transition: all 0.15s ease;
-  border: none;
-}
-
-.feltsense-tour-tooltip .introjs-nextbutton,
-.feltsense-tour-tooltip .introjs-donebutton {
-  background: #4f46e5;
-  color: white;
-}
-
-.feltsense-tour-tooltip .introjs-nextbutton:hover,
-.feltsense-tour-tooltip .introjs-donebutton:hover {
-  background: #3730a3;
-}
-
-.feltsense-tour-tooltip .introjs-nextbutton:focus,
-.feltsense-tour-tooltip .introjs-donebutton:focus {
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
-}
-
-.feltsense-tour-tooltip .introjs-prevbutton {
-  background: transparent;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.feltsense-tour-tooltip .introjs-prevbutton:hover {
-  background: #f1f5f9;
-}
-
-.feltsense-tour-tooltip .introjs-skipbutton {
-  color: #94a3b8;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.feltsense-tour-tooltip .introjs-skipbutton:hover {
-  color: #475569;
-}
-
-.feltsense-tour-tooltip .introjs-progress {
-  background: #e2e8f0;
-  height: 3px;
-  margin: 0 24px;
-  border-radius: 3px;
-}
-
-.feltsense-tour-tooltip .introjs-progressbar {
-  background: linear-gradient(135deg, #4f46e5, #06b6d4);
-  border-radius: 3px;
-}
-
-.introjs-helperLayer.feltsense-tour-highlight {
-  border-radius: 12px;
-  box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.6);
-}
-
-.introjs-overlay {
-  background: transparent !important;
 }

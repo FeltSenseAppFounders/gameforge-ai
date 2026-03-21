@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-plus-jakarta-sans",
+const pricedown = localFont({
+  src: "../../public/fonts/pricedown.woff",
+  variable: "--font-pricedown",
   display: "swap",
+  weight: "900",
 });
 
 const inter = Inter({
@@ -21,9 +23,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FeltSense Clinic — AI-Powered Reception, Always On",
+  title: "GameForge AI — Create Real Games With AI",
   description:
-    "Smart AI receptionist for dental practices. Handle calls, book appointments, verify insurance, and collect payments automatically.",
+    "Describe your game to MAX. Watch it come to life in your browser — playable in seconds. AI-powered game creation platform.",
 };
 
 export default function RootLayout({
@@ -34,9 +36,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${pricedown.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="font-body text-neutral-700 bg-neutral-50 antialiased">
+      <body className="font-body text-neutral-300 bg-surface-dark antialiased">
         {children}
       </body>
     </html>
