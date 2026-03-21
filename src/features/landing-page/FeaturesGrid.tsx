@@ -2,75 +2,104 @@ import { AnimateOnScroll } from "./AnimateOnScroll";
 
 const features = [
   {
-    title: "Voice AI Agent",
+    title: "INSTANT GAME CREATION",
     description:
-      "Answers calls in natural conversation. Books appointments, answers FAQs, handles emergencies with instant human handoff.",
+      "Describe any 2D game. MAX generates playable Phaser.js code in seconds. Space shooters, platformers, puzzles — you name it.",
+    color: "accent" as const,
     icon: (
-      <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+      <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
   },
   {
-    title: "PMS Integration",
+    title: "ITERATE IN REAL-TIME",
     description:
-      "Real-time two-way sync with Dentrix, OpenDental, and Eaglesoft. No double-booking, no manual entry.",
+      "Add enemies, power-ups, levels — just tell MAX. See changes instantly in the live preview. No coding required.",
+    color: "accent-blue" as const,
     icon: (
-      <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
       </svg>
     ),
   },
   {
-    title: "Insurance & Payments",
+    title: "SHARE & PLAY",
     description:
-      "Instant insurance verification and PCI-compliant payment collection. Revenue recovery on autopilot.",
+      "Publish to the community gallery. Play games built by other creators. Like, share, and get inspired.",
+    color: "accent-purple" as const,
     icon: (
-      <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
     ),
   },
 ];
 
+const colorMap = {
+  accent: {
+    bg: "bg-accent/10",
+    border: "border-accent/20",
+    text: "text-accent",
+    iconBg: "bg-accent",
+    glow: "glow-orange",
+  },
+  "accent-blue": {
+    bg: "bg-accent-blue/10",
+    border: "border-accent-blue/20",
+    text: "text-accent-blue",
+    iconBg: "bg-accent-blue",
+    glow: "glow-blue",
+  },
+  "accent-purple": {
+    bg: "bg-accent-purple/10",
+    border: "border-accent-purple/20",
+    text: "text-accent-purple",
+    iconBg: "bg-accent-purple",
+    glow: "glow-purple",
+  },
+};
+
 export function FeaturesGrid() {
   return (
-    <section id="features" className="bg-white py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+    <section id="features" className="bg-surface-dark py-16 md:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section header */}
         <AnimateOnScroll className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-3">
-            Features
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-light mb-3">
+            FEATURES
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold font-heading text-neutral-800 mb-4">
-            Everything Your Front Desk Does. Faster.
+          <h2 className="text-3xl md:text-4xl font-heading text-neutral-100 mb-4 uppercase">
+            BUILD ANY GAME YOU CAN IMAGINE
           </h2>
-          <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
-            From the first ring to payment collection, FeltSense Clinic handles
-            every step.
+          <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
+            From concept to playable game in seconds. MAX handles the code &mdash; you bring the ideas.
           </p>
         </AnimateOnScroll>
 
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
-          {features.map((feature, i) => (
-            <AnimateOnScroll key={feature.title} delay={i * 0.15}>
-              <div className="bg-white border border-neutral-200/50 rounded-lg p-8 shadow-sm hover:shadow-md transition-all duration-200 group hover:-translate-y-1 h-full">
-                {/* Icon */}
-                <div className="w-12 h-12 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6">
-                  {feature.icon}
+          {features.map((feature, i) => {
+            const colors = colorMap[feature.color];
+            return (
+              <AnimateOnScroll key={feature.title} delay={i * 0.15}>
+                <div className={`bg-surface border border-neutral-700 rounded-lg p-8 hover:${colors.border} transition-all duration-200 group hover:-translate-y-1 h-full`}>
+                  {/* Icon */}
+                  <div className={`w-12 h-12 rounded-md ${colors.iconBg} flex items-center justify-center mb-6 text-white`}>
+                    {feature.icon}
+                  </div>
+                  {/* Title */}
+                  <h3 className={`text-xl font-heading ${colors.text} mb-3 uppercase`}>
+                    {feature.title}
+                  </h3>
+                  {/* Description */}
+                  <p className="text-base text-neutral-400 leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
-                {/* Title */}
-                <h3 className="text-xl font-semibold font-heading text-neutral-800 mb-3">
-                  {feature.title}
-                </h3>
-                {/* Description */}
-                <p className="text-base text-neutral-500 leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
-            </AnimateOnScroll>
-          ))}
+              </AnimateOnScroll>
+            );
+          })}
         </div>
       </div>
     </section>

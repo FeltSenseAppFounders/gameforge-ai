@@ -5,34 +5,34 @@ import { AnimateOnScroll } from "./AnimateOnScroll";
 
 const faqs = [
   {
-    question: "Is FeltSense Clinic HIPAA compliant?",
+    question: "What kinds of games can MAX create?",
     answer:
-      "Yes. All data is encrypted in transit and at rest. We sign BAAs with every customer and maintain SOC 2 Type II compliance. Your patient data is never used to train AI models.",
+      "MAX specializes in 2D browser games using Phaser.js — space shooters, platformers, puzzle games, racing games, RPGs with tile-based movement, and more. If it can be built with 2D sprites and physics, MAX can build it.",
   },
   {
-    question: "How accurate is the AI?",
+    question: "Do I need to know how to code?",
     answer:
-      "Our AI achieves 97%+ accuracy on appointment booking and insurance verification. For complex cases, it seamlessly hands off to your staff with full conversation context.",
+      "Not at all. Just describe what you want in plain English. \"Make me a space shooter with power-ups\" or \"Create a platformer where I collect coins\" — MAX handles all the code.",
   },
   {
-    question: "How long does setup take?",
+    question: "Can I export the game code?",
     answer:
-      "Most practices are live within 24 hours. Connect your PMS, configure your preferences, and the AI starts handling calls immediately. Our onboarding team guides you through every step.",
+      "Yes! Pro users can export the complete HTML/JavaScript source code. The games are self-contained — just open the HTML file in any browser to play. You own your code.",
   },
   {
-    question: "Will patients know they're talking to AI?",
+    question: "How does the iteration work?",
     answer:
-      "The AI introduces itself transparently. Patients appreciate the instant response — no hold times, no phone trees. Our natural voice models sound conversational, not robotic.",
+      "After MAX generates your initial game, just keep chatting. Say \"add a health bar\" or \"make the enemies faster\" and MAX regenerates the complete game with your changes. You see updates instantly in the preview.",
   },
   {
-    question: "What if the AI can't handle a call?",
+    question: "Are the games actually playable?",
     answer:
-      "Instant human handoff. The AI transfers to your staff with full context of the conversation so patients never have to repeat themselves. You set the escalation rules.",
+      "Yes — 98% of games are playable on first generation. They use real Phaser.js with physics, collisions, keyboard controls, scoring, and game-over states. These are real games, not mockups.",
   },
   {
-    question: "Can I try before I commit?",
+    question: "Can I share my games with others?",
     answer:
-      "Absolutely. We offer a 14-day free trial with full functionality. Book a demo and we'll get you set up in minutes. No credit card required.",
+      "Absolutely. Publish any game to the community gallery where other creators can play, like, and get inspired by your work. You can also share direct links to your games.",
   },
 ];
 
@@ -45,7 +45,7 @@ function ChevronIcon({ open }: { open: boolean }) {
       viewBox="0 0 24 24"
       stroke="currentColor"
       strokeWidth={2}
-      className={`text-neutral-400 shrink-0 transition-transform duration-200 ${
+      className={`text-neutral-500 shrink-0 transition-transform duration-200 ${
         open ? "rotate-180" : ""
       }`}
     >
@@ -58,15 +58,15 @@ export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="bg-white py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+    <section id="faq" className="bg-surface py-16 md:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* Section header */}
         <AnimateOnScroll className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-light mb-3">
             FAQ
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold font-heading text-neutral-800 mb-4">
-            Frequently Asked Questions
+          <h2 className="text-3xl md:text-4xl font-heading text-neutral-100 mb-4 uppercase">
+            FREQUENTLY ASKED QUESTIONS
           </h2>
         </AnimateOnScroll>
 
@@ -78,15 +78,15 @@ export function FaqSection() {
 
             return (
               <AnimateOnScroll key={faq.question} delay={i * 0.05}>
-                <div className="border border-neutral-200 rounded-lg overflow-hidden">
+                <div className="border border-neutral-700 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setOpenIndex(isOpen ? null : i)}
-                    className="w-full flex items-center justify-between px-6 py-5 text-left bg-white hover:bg-neutral-50 transition-colors duration-150 min-h-[44px]"
+                    className="w-full flex items-center justify-between px-6 py-5 text-left bg-surface hover:bg-surface-light transition-colors duration-150 min-h-[44px]"
                     aria-expanded={isOpen}
                     aria-controls={`${id}-panel`}
                     id={`${id}-trigger`}
                   >
-                    <span className="text-base font-semibold text-neutral-800 pr-4">
+                    <span className="text-base font-semibold text-neutral-200 pr-4">
                       {faq.question}
                     </span>
                     <ChevronIcon open={isOpen} />
@@ -101,7 +101,7 @@ export function FaqSection() {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="px-6 pb-5 text-base text-neutral-600 leading-relaxed">
+                      <div className="px-6 pb-5 text-base text-neutral-400 leading-relaxed">
                         {faq.answer}
                       </div>
                     </div>

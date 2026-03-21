@@ -3,58 +3,58 @@ import { AnimateOnScroll } from "./AnimateOnScroll";
 const steps = [
   {
     number: 1,
-    title: "Connect Your PMS",
+    title: "DESCRIBE YOUR GAME",
     description:
-      "Link Dentrix, OpenDental, or Eaglesoft. We sync your calendar, patient records, and insurance data.",
+      "Tell MAX what you want. \"Make me a space shooter\" or \"Create a platformer with double jump\" — anything goes.",
   },
   {
     number: 2,
-    title: "AI Handles Calls",
+    title: "MAX BUILDS IT",
     description:
-      "Every inbound call is answered instantly. Appointments booked, insurance verified, payments collected.",
+      "MAX generates real Phaser.js code in seconds. Your game appears instantly in the live preview — fully playable.",
   },
   {
     number: 3,
-    title: "Revenue Grows",
+    title: "PLAY & SHARE",
     description:
-      "Recover $50K+/year in missed revenue. Zero missed calls, zero manual work.",
+      "Test your game, iterate with MAX, then publish to the community gallery. Other creators can play and like your games.",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-neutral-50 py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+    <section id="how-it-works" className="bg-surface py-16 md:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section header */}
         <AnimateOnScroll className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-3">
-            How It Works
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-light mb-3">
+            HOW IT WORKS
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold font-heading text-neutral-800 mb-4">
-            Up and Running in 24 Hours
+          <h2 className="text-3xl md:text-4xl font-heading text-neutral-100 mb-4 uppercase">
+            THREE STEPS TO YOUR GAME
           </h2>
-          <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
-            Three simple steps to transform your front desk.
+          <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
+            No code. No downloads. Just describe, build, and play.
           </p>
         </AnimateOnScroll>
 
         {/* Steps */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 relative">
           {/* Connecting line (desktop only) */}
-          <div className="hidden md:block absolute top-6 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-primary via-accent to-secondary" />
+          <div className="hidden md:block absolute top-6 left-[16.67%] right-[16.67%] h-px bg-primary-light/30" />
 
           {steps.map((step, i) => (
             <AnimateOnScroll key={step.number} delay={i * 0.15} className="text-center">
-              {/* Number circle */}
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent text-white text-lg font-bold font-heading flex items-center justify-center mx-auto mb-6 relative z-10 shadow-md">
+              {/* Number */}
+              <div className="w-12 h-12 rounded-md bg-primary text-white text-lg font-heading flex items-center justify-center mx-auto mb-6 relative z-10 glow-green">
                 {step.number}
               </div>
               {/* Title */}
-              <h3 className="text-xl font-semibold font-heading text-neutral-800 mb-3">
+              <h3 className="text-xl font-heading text-primary-light mb-3 uppercase">
                 {step.title}
               </h3>
               {/* Description */}
-              <p className="text-base text-neutral-500 max-w-xs mx-auto">
+              <p className="text-base text-neutral-400 max-w-xs mx-auto">
                 {step.description}
               </p>
             </AnimateOnScroll>

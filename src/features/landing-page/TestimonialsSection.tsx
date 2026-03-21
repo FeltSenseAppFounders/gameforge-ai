@@ -3,30 +3,30 @@ import { AnimateOnScroll } from "./AnimateOnScroll";
 const testimonials = [
   {
     quote:
-      "We went from missing 30% of calls to zero. FeltSense Clinic paid for itself in the first week.",
-    name: "Dr. Sarah Mitchell, DDS",
-    title: "Owner, Bright Smiles Dental",
-    initials: "SM",
+      "I described a racing game and had something playable in 10 seconds. Then I said 'add nitro boost' and it just worked. This is insane.",
+    name: "Alex Rivera",
+    title: "Indie Game Creator",
+    initials: "AR",
   },
   {
     quote:
-      "The insurance verification alone saves my front desk 15 hours a week. My staff actually enjoys coming to work now.",
-    name: "Dr. James Rodriguez",
-    title: "Partner, Summit Dental Group",
-    initials: "JR",
+      "I used GameForge to prototype 5 game ideas in an afternoon. What would have taken me weeks of coding happened in hours.",
+    name: "Sarah Kim",
+    title: "Game Design Student",
+    initials: "SK",
   },
   {
     quote:
-      "Setup took 20 minutes. The next morning, AI was answering calls like it had worked here for years.",
-    name: "Dr. Amanda Chen, DDS",
-    title: "Owner, Pacific Dental Care",
-    initials: "AC",
+      "My kids and I spend weekends building games together now. They describe what they want and MAX makes it real. Pure magic.",
+    name: "Marcus Thompson",
+    title: "Parent & Hobbyist",
+    initials: "MT",
   },
 ];
 
 function StarIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#F59E0B">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#FED985">
       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
     </svg>
   );
@@ -34,15 +34,15 @@ function StarIcon() {
 
 export function TestimonialsSection() {
   return (
-    <section className="bg-white py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+    <section className="bg-surface py-16 md:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section header */}
         <AnimateOnScroll className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-3">
-            Testimonials
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-light mb-3">
+            TESTIMONIALS
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold font-heading text-neutral-800 mb-4">
-            Loved by Dental Practices
+          <h2 className="text-3xl md:text-4xl font-heading text-neutral-100 mb-4 uppercase">
+            CREATORS LOVE GAMEFORGE
           </h2>
         </AnimateOnScroll>
 
@@ -50,7 +50,7 @@ export function TestimonialsSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
           {testimonials.map((t, i) => (
             <AnimateOnScroll key={t.name} delay={i * 0.15}>
-              <article className="bg-neutral-50 rounded-lg border border-neutral-200 p-8 h-full flex flex-col">
+              <article className="bg-surface-dark rounded-lg border border-neutral-700 p-8 h-full flex flex-col">
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
@@ -58,16 +58,16 @@ export function TestimonialsSection() {
                   ))}
                 </div>
                 {/* Quote */}
-                <blockquote className="text-base text-neutral-600 leading-relaxed italic mb-6 flex-1">
+                <blockquote className="text-base text-neutral-300 leading-relaxed italic mb-6 flex-1">
                   &ldquo;{t.quote}&rdquo;
                 </blockquote>
                 {/* Attribution */}
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-neutral-800">
+                    <p className="text-sm font-semibold text-neutral-200">
                       {t.name}
                     </p>
                     <p className="text-xs text-neutral-500">{t.title}</p>

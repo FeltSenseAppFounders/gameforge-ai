@@ -4,22 +4,22 @@ import { AnimatedCounter } from "./AnimatedCounter";
 import { AnimateOnScroll } from "./AnimateOnScroll";
 
 const stats = [
-  { target: 10000, suffix: "+", label: "Calls Handled" },
-  { target: 2.4, prefix: "$", suffix: "M", label: "Revenue Recovered", isCurrency: true },
-  { target: 35, suffix: "", label: "Hours Saved / Week" },
+  { target: 1000, suffix: "+", label: "Games Created" },
+  { target: 5000, suffix: "+", label: "Creators" },
+  { target: 98, suffix: "%", label: "Playable on First Try" },
 ];
 
 export function StatsSection() {
   return (
-    <section className="bg-gradient-to-b from-neutral-900 to-neutral-950 py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+    <section className="bg-surface-dark py-16 md:py-24 px-4 sm:px-6 lg:px-8 border-y border-neutral-700">
       <div className="max-w-6xl mx-auto text-center">
         {/* Section header */}
         <AnimateOnScroll>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-accent mb-3">
-            Impact
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-secondary mb-3">
+            IMPACT
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold font-heading text-white mb-4">
-            Numbers That Speak For Themselves
+          <h2 className="text-3xl md:text-4xl font-heading text-neutral-100 mb-4 uppercase">
+            NUMBERS DON&apos;T LIE
           </h2>
         </AnimateOnScroll>
 
@@ -28,33 +28,16 @@ export function StatsSection() {
           {stats.map((stat, i) => (
             <AnimateOnScroll key={stat.label} delay={i * 0.15}>
               <div className="flex flex-col items-center">
-                <div className="text-5xl md:text-6xl font-bold font-heading text-gradient-ai">
-                  {stat.isCurrency ? (
-                    <span>
-                      {stat.prefix}
-                      <AnimatedCounter
-                        target={24}
-                        suffix=""
-                        duration={2000}
-                      />
-                      .
-                      <AnimatedCounter
-                        target={4}
-                        suffix=""
-                        duration={2000}
-                      />
-                      {stat.suffix}
-                    </span>
-                  ) : (
-                    <AnimatedCounter
-                      target={stat.target}
-                      prefix={stat.prefix || ""}
-                      suffix={stat.suffix}
-                      duration={2000}
-                    />
-                  )}
+                <div className="text-5xl md:text-6xl font-heading text-primary-light neon-text uppercase">
+                  <AnimatedCounter
+                    target={stat.target}
+                    suffix={stat.suffix}
+                    duration={2000}
+                  />
                 </div>
-                <p className="text-base text-neutral-400 mt-2">{stat.label}</p>
+                <p className="text-base text-neutral-400 mt-2 uppercase tracking-wider font-semibold text-sm">
+                  {stat.label}
+                </p>
               </div>
             </AnimateOnScroll>
           ))}
