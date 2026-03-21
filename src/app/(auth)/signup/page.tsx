@@ -53,24 +53,24 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-dark flex items-center justify-center px-4">
         <div className="w-full max-w-[400px] text-center">
-          <a href="/" className="flex items-center justify-center gap-1.5 mb-8">
-            <span className="text-2xl font-bold font-heading text-neutral-800">
-              FeltSense
+          <a href="/" className="flex items-center justify-center gap-1 mb-8">
+            <span className="text-2xl font-heading text-primary-light uppercase">
+              GAMEFORGE
             </span>
-            <span className="text-2xl font-bold font-heading text-accent">
-              Clinic
+            <span className="text-2xl font-heading text-secondary uppercase">
+              AI
             </span>
           </a>
-          <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-8">
-            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <div className="bg-surface rounded-lg border border-neutral-700 p-8">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
               <svg
                 width="24"
                 height="24"
                 fill="none"
                 viewBox="0 0 24 24"
-                className="text-success"
+                className="text-primary-light"
                 stroke="currentColor"
                 strokeWidth={2}
               >
@@ -81,12 +81,12 @@ export default function SignupPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold font-heading text-neutral-800 mb-2">
+            <h2 className="text-xl font-heading text-neutral-100 mb-2 uppercase">
               Check your email
             </h2>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-neutral-400">
               We sent a confirmation link to{" "}
-              <span className="font-semibold text-neutral-700">{email}</span>.
+              <span className="font-semibold text-neutral-200">{email}</span>.
               Click the link to activate your account.
             </p>
           </div>
@@ -96,30 +96,30 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface-dark flex items-center justify-center px-4">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <a href="/" className="flex items-center justify-center gap-1.5 mb-8">
-          <span className="text-2xl font-bold font-heading text-neutral-800">
-            FeltSense
+        <a href="/" className="flex items-center justify-center gap-1 mb-8">
+          <span className="text-2xl font-heading text-primary-light uppercase">
+            GAMEFORGE
           </span>
-          <span className="text-2xl font-bold font-heading text-accent">
-            Clinic
+          <span className="text-2xl font-heading text-secondary uppercase">
+            AI
           </span>
         </a>
 
-        <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-8">
-          <h1 className="text-xl font-semibold font-heading text-neutral-800 text-center mb-1">
+        <div className="bg-surface rounded-lg border border-neutral-700 p-8">
+          <h1 className="text-xl font-heading text-neutral-100 text-center mb-1 uppercase">
             Create your account
           </h1>
           <p className="text-sm text-neutral-500 text-center mb-6">
-            Start managing your practice with AI
+            Start creating games with MAX
           </p>
 
           {/* OAuth */}
           <button
             onClick={() => handleOAuthLogin("google")}
-            className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-md px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors duration-150 min-h-[44px] mb-6"
+            className="w-full flex items-center justify-center gap-3 border border-neutral-700 rounded px-4 py-2.5 text-sm font-semibold text-neutral-300 hover:bg-surface-light transition-colors min-h-[44px] mb-6"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path
@@ -144,9 +144,9 @@ export default function SignupPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-neutral-200" />
-            <span className="text-xs text-neutral-400">or</span>
-            <div className="flex-1 h-px bg-neutral-200" />
+            <div className="flex-1 h-px bg-neutral-700" />
+            <span className="text-xs text-neutral-500">or</span>
+            <div className="flex-1 h-px bg-neutral-700" />
           </div>
 
           {/* Email/Password form */}
@@ -154,7 +154,7 @@ export default function SignupPage() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="fullName"
-                className="text-sm font-semibold text-neutral-700"
+                className="text-sm font-semibold text-neutral-300"
               >
                 Full Name
               </label>
@@ -163,16 +163,16 @@ export default function SignupPage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Dr. Jane Smith"
+                placeholder="Alex Rivera"
                 required
-                className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-base text-neutral-700 placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/35 focus:outline-none transition-colors duration-150"
+                className="w-full bg-surface-dark border border-neutral-700 rounded px-3.5 py-2.5 text-base text-neutral-200 placeholder:text-neutral-600 focus:border-primary/50 focus:outline-none transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-sm font-semibold text-neutral-700"
+                className="text-sm font-semibold text-neutral-300"
               >
                 Email
               </label>
@@ -181,16 +181,16 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@clinic.com"
+                placeholder="alex@example.com"
                 required
-                className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-base text-neutral-700 placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/35 focus:outline-none transition-colors duration-150"
+                className="w-full bg-surface-dark border border-neutral-700 rounded px-3.5 py-2.5 text-base text-neutral-200 placeholder:text-neutral-600 focus:border-primary/50 focus:outline-none transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
-                className="text-sm font-semibold text-neutral-700"
+                className="text-sm font-semibold text-neutral-300"
               >
                 Password
               </label>
@@ -202,12 +202,12 @@ export default function SignupPage() {
                 placeholder="At least 6 characters"
                 required
                 minLength={6}
-                className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-base text-neutral-700 placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/35 focus:outline-none transition-colors duration-150"
+                className="w-full bg-surface-dark border border-neutral-700 rounded px-3.5 py-2.5 text-base text-neutral-200 placeholder:text-neutral-600 focus:border-primary/50 focus:outline-none transition-colors"
               />
             </div>
 
             {error && (
-              <div className="px-3 py-2 bg-error/10 border-l-4 border-l-error rounded-r-md">
+              <div className="px-3 py-2 bg-error/10 border-l-2 border-l-error rounded-r">
                 <p className="text-sm text-error">{error}</p>
               </div>
             )}
@@ -215,7 +215,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary hover:bg-primary-dark text-white rounded-md px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary hover:bg-primary-light text-white rounded px-6 py-3 text-sm font-semibold transition-colors glow-green min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Creating account..." : "Create account"}
             </button>
@@ -226,7 +226,7 @@ export default function SignupPage() {
           Already have an account?{" "}
           <a
             href="/login"
-            className="text-primary font-semibold hover:text-primary-dark transition-colors"
+            className="text-primary-light font-semibold hover:text-primary transition-colors"
           >
             Sign in
           </a>

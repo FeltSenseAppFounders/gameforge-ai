@@ -58,20 +58,6 @@
 
 ---
 
-## Concept Mapping (from Patientdesk)
-
-| Patientdesk | GameForge AI |
-|---|---|
-| Clinic | Studio |
-| Patient | Game Project |
-| Call | Chat Session |
-| Provider | AI Persona (MAX) |
-| Sarah (AI Receptionist) | MAX (AI Game Designer) |
-| Demo Clinic | Demo Studio |
-| Voice Agent (Python/LiveKit) | Chat API (Next.js/Claude) |
-
----
-
 ## Development Rules
 
 1. **Design system first**: Always read `design_system.md` before any UI work. Use ONLY design system tokens.

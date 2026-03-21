@@ -56,30 +56,30 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface-dark flex items-center justify-center px-4">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <a href="/" className="flex items-center justify-center gap-1.5 mb-8">
-          <span className="text-2xl font-bold font-heading text-neutral-800">
-            FeltSense
+        <a href="/" className="flex items-center justify-center gap-1 mb-8">
+          <span className="text-2xl font-heading text-primary-light uppercase">
+            GAMEFORGE
           </span>
-          <span className="text-2xl font-bold font-heading text-accent">
-            Clinic
+          <span className="text-2xl font-heading text-secondary uppercase">
+            AI
           </span>
         </a>
 
-        <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-8">
-          <h1 className="text-xl font-semibold font-heading text-neutral-800 text-center mb-1">
+        <div className="bg-surface rounded-lg border border-neutral-700 p-8">
+          <h1 className="text-xl font-heading text-neutral-100 text-center mb-1 uppercase">
             Welcome back
           </h1>
           <p className="text-sm text-neutral-500 text-center mb-6">
-            Sign in to your dashboard
+            Sign in to your studio
           </p>
 
           {/* OAuth */}
           <button
             onClick={() => handleOAuthLogin("google")}
-            className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-md px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors duration-150 min-h-[44px] mb-6"
+            className="w-full flex items-center justify-center gap-3 border border-neutral-700 rounded px-4 py-2.5 text-sm font-semibold text-neutral-300 hover:bg-surface-light transition-colors min-h-[44px] mb-6"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path
@@ -104,9 +104,9 @@ function LoginForm() {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-neutral-200" />
-            <span className="text-xs text-neutral-400">or</span>
-            <div className="flex-1 h-px bg-neutral-200" />
+            <div className="flex-1 h-px bg-neutral-700" />
+            <span className="text-xs text-neutral-500">or</span>
+            <div className="flex-1 h-px bg-neutral-700" />
           </div>
 
           {/* Email/Password form */}
@@ -114,7 +114,7 @@ function LoginForm() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-sm font-semibold text-neutral-700"
+                className="text-sm font-semibold text-neutral-300"
               >
                 Email
               </label>
@@ -123,16 +123,16 @@ function LoginForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@clinic.com"
+                placeholder="you@example.com"
                 required
-                className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-base text-neutral-700 placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/35 focus:outline-none transition-colors duration-150"
+                className="w-full bg-surface-dark border border-neutral-700 rounded px-3.5 py-2.5 text-base text-neutral-200 placeholder:text-neutral-600 focus:border-primary/50 focus:outline-none transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
-                className="text-sm font-semibold text-neutral-700"
+                className="text-sm font-semibold text-neutral-300"
               >
                 Password
               </label>
@@ -143,12 +143,12 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your password"
                 required
-                className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-base text-neutral-700 placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/35 focus:outline-none transition-colors duration-150"
+                className="w-full bg-surface-dark border border-neutral-700 rounded px-3.5 py-2.5 text-base text-neutral-200 placeholder:text-neutral-600 focus:border-primary/50 focus:outline-none transition-colors"
               />
             </div>
 
             {error && (
-              <div className="px-3 py-2 bg-error/10 border-l-4 border-l-error rounded-r-md">
+              <div className="px-3 py-2 bg-error/10 border-l-2 border-l-error rounded-r">
                 <p className="text-sm text-error">{error}</p>
               </div>
             )}
@@ -156,7 +156,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary hover:bg-primary-dark text-white rounded-md px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary hover:bg-primary-light text-white rounded px-6 py-3 text-sm font-semibold transition-colors glow-green min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
@@ -167,7 +167,7 @@ function LoginForm() {
           Don&apos;t have an account?{" "}
           <a
             href="/signup"
-            className="text-primary font-semibold hover:text-primary-dark transition-colors"
+            className="text-primary-light font-semibold hover:text-primary transition-colors"
           >
             Sign up
           </a>
