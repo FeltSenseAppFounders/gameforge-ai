@@ -133,16 +133,23 @@ export function ChatPanel({
                 it happen. 🎮
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {["Space shooter", "Platformer", "Racing game", "Puzzle game"].map(
+                {[
+                  { label: "Space Shooter", prompt: "Make a space shooter with power-ups and enemy waves" },
+                  { label: "Platformer", prompt: "Build a platformer with double-jump, coins, and moving platforms" },
+                  { label: "Racing", prompt: "Create a top-down racer with speed boosts and obstacles" },
+                  { label: "Puzzle", prompt: "Make a color-matching puzzle with combos and a timer" },
+                  { label: "Snake", prompt: "Build a neon snake game that gets faster as you eat" },
+                  { label: "Dungeon RPG", prompt: "Make a dungeon crawler with rooms, enemies, and loot" },
+                ].map(
                   (suggestion) => (
                     <button
-                      key={suggestion}
+                      key={suggestion.label}
                       onClick={() => {
-                        onInputChange(`Make me a ${suggestion.toLowerCase()}`);
+                        onInputChange(suggestion.prompt);
                       }}
                       className="text-xs px-3 py-1.5 rounded border border-neutral-600 text-neutral-300 hover:border-primary/50 hover:text-primary-light transition-colors"
                     >
-                      {suggestion}
+                      {suggestion.label}
                     </button>
                   )
                 )}

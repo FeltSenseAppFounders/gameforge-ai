@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const pricedown = localFont({
@@ -40,6 +41,7 @@ export default function RootLayout({
     >
       <body className="font-body text-neutral-300 bg-surface-dark antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   );

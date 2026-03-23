@@ -4,8 +4,7 @@ import { NextResponse } from "next/server";
 /**
  * POST /api/demo/create
  *
- * Creates a demo studio with seeded game projects for instant onboarding.
- * Uses Supabase service role (admin) to create user without email verification.
+ * Creates a demo studio with seeded game projects. User must confirm email before signing in.
  */
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,14 +18,22 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, email } = body as {
+  const { name, email, password } = body as {
     name: string;
     email: string;
+    password: string;
   };
 
-  if (!name || !email) {
+  if (!name || !email || !password) {
     return NextResponse.json(
-      { error: "Name and email are required" },
+      { error: "Name, email, and password are required" },
+      { status: 400 }
+    );
+  }
+
+  if (password.length < 6) {
+    return NextResponse.json(
+      { error: "Password must be at least 6 characters" },
       { status: 400 }
     );
   }
@@ -35,13 +42,12 @@ export async function POST(request: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // 1. Create user with email_confirm: true (no verification email)
-  const demoPassword = crypto.randomUUID();
+  // 1. Create user with email_confirm: false (Supabase sends verification email)
   const { data: userData, error: userError } =
     await supabase.auth.admin.createUser({
       email,
-      password: demoPassword,
-      email_confirm: true,
+      password,
+      email_confirm: false,
       user_metadata: { full_name: name, is_demo: true },
     });
 
@@ -77,11 +83,7 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(
-    {
-      studioId,
-      email,
-      password: demoPassword,
-    },
+    { studioId, email },
     { status: 201 }
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useCallback } from "react";
+import { ShareButton } from "@/features/community/ShareButton";
 
 interface GamePreviewProps {
   gameCode: string | null;
@@ -9,6 +10,8 @@ interface GamePreviewProps {
   onPublish?: () => void;
   isSaving?: boolean;
   gameName?: string;
+  gameProjectId?: string | null;
+  isPublished?: boolean;
 }
 
 function GamepadIcon({ className }: { className?: string }) {
@@ -38,6 +41,8 @@ export function GamePreview({
   onPublish,
   isSaving,
   gameName,
+  gameProjectId,
+  isPublished,
 }: GamePreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -139,12 +144,12 @@ export function GamePreview({
           {/* Restart */}
           <button
             onClick={handleRestart}
-            title="Restart game"
-            className="p-2 rounded hover:bg-surface-light text-neutral-400 hover:text-neutral-200 transition-colors"
+            title="Restart game (reload from beginning)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold text-primary-light border border-primary/40 hover:border-primary-light hover:bg-primary/10 transition-colors"
           >
             <svg
-              width="16"
-              height="16"
+              width="14"
+              height="14"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -156,6 +161,7 @@ export function GamePreview({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
+            RESTART
           </button>
 
           {/* Fullscreen */}
@@ -190,6 +196,14 @@ export function GamePreview({
             >
               {isSaving ? "SAVING..." : "SAVE"}
             </button>
+          )}
+
+          {/* Share */}
+          {gameProjectId && isPublished && (
+            <ShareButton
+              gameId={gameProjectId}
+              gameName={gameName || "Game"}
+            />
           )}
 
           {/* Publish */}

@@ -22,6 +22,7 @@ export interface GameProject {
   likes_count: number;
   views_count: number;
   is_public: boolean;
+  creator_name: string | null;
   created_at: string;
   updated_at: string;
 }

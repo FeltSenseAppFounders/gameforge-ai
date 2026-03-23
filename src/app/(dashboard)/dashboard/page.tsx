@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getStudioContext } from "@/lib/studio-context";
+import { DemoTour } from "@/features/onboarding/DemoTour";
+import { TemplateGallery } from "@/features/game-creator/TemplateGallery";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -98,6 +101,17 @@ export default async function DashboardPage() {
         </div>
       </Link>
 
+      {/* Starter Game Templates */}
+      <div>
+        <h2 className="text-xl font-heading text-neutral-200 uppercase mb-1">
+          STARTER GAMES
+        </h2>
+        <p className="text-sm text-neutral-500 mb-4">
+          Play instantly or customize with MAX
+        </p>
+        <TemplateGallery />
+      </div>
+
       {/* Recent Games */}
       {recentGames.length > 0 && (
         <div>
@@ -140,6 +154,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+      <Suspense>
+        <DemoTour />
+      </Suspense>
     </div>
   );
 }

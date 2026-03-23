@@ -1,13 +1,24 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { Suspense, useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
 import { createClient } from "@/lib/supabase/client";
+import { GAME_TEMPLATES } from "@/lib/game-templates";
 import type { ChatMessage } from "@/features/game-creator/ChatPanel";
 
 export default function CreateGamePage() {
+  return (
+    <Suspense>
+      <CreateGameContent />
+    </Suspense>
+  );
+}
+
+function CreateGameContent() {
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -22,6 +33,30 @@ export default function CreateGamePage() {
   const gameCodeRef = useRef<string | null>(null);
   // Ref to track whether we've already auto-switched to preview
   const hasAutoSwitched = useRef(false);
+  // Ref to prevent double-loading template
+  const templateLoaded = useRef(false);
+
+  // Load template if ?template= param is present
+  useEffect(() => {
+    if (templateLoaded.current) return;
+    const templateId = searchParams.get("template");
+    if (!templateId) return;
+    const template = GAME_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return;
+    templateLoaded.current = true;
+
+    setGameCode(template.gameCode);
+    gameCodeRef.current = template.gameCode;
+    setGameName(template.name);
+    setActiveTab("preview");
+    hasAutoSwitched.current = true;
+    setMessages([
+      {
+        role: "assistant",
+        content: `I've loaded the **${template.name}** template — a ${template.genre} game. It's playable right now!\n\nWant me to customize it? Try:\n- "Add power-ups"\n- "Make it harder"\n- "Change the colors to blue"\n- "Add a boss fight"\n- "Add sound effects"`,
+      },
+    ]);
+  }, [searchParams]);
 
   // Auto-switch to preview tab on mobile when game code first becomes available
   useEffect(() => {
@@ -293,6 +328,8 @@ export default function CreateGamePage() {
           onPublish={handlePublish}
           isSaving={isSaving}
           gameName={gameName}
+          gameProjectId={gameProjectId}
+          isPublished={false}
         />
       </div>
     </div>

@@ -5,7 +5,11 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Marketing & public routes — no auth needed, skip entirely
-  if (pathname === "/" || pathname.startsWith("/try-it-now")) {
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/try-it-now") ||
+    pathname.startsWith("/play/")
+  ) {
     return NextResponse.next({ request });
   }
 

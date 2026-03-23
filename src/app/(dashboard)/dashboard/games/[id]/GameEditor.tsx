@@ -208,6 +208,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           onPublish={handlePublish}
           isSaving={isSaving}
           gameName={game.name}
+          gameProjectId={game.id}
+          isPublished={game.status === "published"}
         />
       </div>
     </div>
