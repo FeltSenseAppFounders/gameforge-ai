@@ -83,7 +83,7 @@ export function FeaturesGrid() {
             const colors = colorMap[feature.color];
             return (
               <AnimateOnScroll key={feature.title} delay={i * 0.15}>
-                <div className={`bg-surface border border-neutral-700 rounded-lg p-8 hover:${colors.border} transition-all duration-200 group hover:-translate-y-1 h-full`}>
+                <div className={`bg-surface border border-neutral-700 rounded-lg p-4 sm:p-6 md:p-8 hover:${colors.border} transition-all duration-200 group hover:-translate-y-1 h-full`}>
                   {/* Icon */}
                   <div className={`w-12 h-12 rounded-md ${colors.iconBg} flex items-center justify-center mb-6 text-white`}>
                     {feature.icon}

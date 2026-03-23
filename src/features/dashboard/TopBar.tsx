@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./SignOutButton";
+import { MobileSidebarTrigger } from "./MobileSidebarTrigger";
 
 export async function TopBar() {
   const supabase = await createClient();
@@ -20,9 +21,10 @@ export async function TopBar() {
     .toUpperCase();
 
   return (
-    <header className="h-16 bg-surface border-b border-neutral-700 flex items-center justify-between px-6 shrink-0">
+    <header className="h-16 bg-surface border-b border-neutral-700 flex items-center justify-between px-4 sm:px-6 shrink-0">
       {/* Studio name */}
       <div className="flex items-center gap-3">
+        <MobileSidebarTrigger />
         <span className="text-sm font-heading text-neutral-300 uppercase">
           COMMAND CENTER
         </span>

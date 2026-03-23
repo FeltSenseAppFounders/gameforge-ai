@@ -89,9 +89,9 @@ export function PricingSection() {
           {tiers.map((tier, i) => (
             <AnimateOnScroll key={tier.name} delay={i * 0.15}>
               <div
-                className={`bg-surface rounded-lg border p-8 relative flex flex-col h-full ${
+                className={`bg-surface rounded-lg border p-4 sm:p-6 md:p-8 relative flex flex-col h-full ${
                   tier.featured
-                    ? "border-primary-light/30 glow-green md:scale-105"
+                    ? "border-primary-light/30 glow-green md:-my-4 md:py-12"
                     : "border-neutral-700"
                 }`}
               >

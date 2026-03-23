@@ -55,7 +55,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-surface text-neutral-400 min-h-screen flex flex-col shrink-0 border-r border-neutral-700">
+    <aside className="w-64 bg-surface text-neutral-400 min-h-screen hidden md:flex flex-col shrink-0 border-r border-neutral-700">
       {/* Logo */}
       <div className="px-6 py-6">
         <Link href="/dashboard" className="flex items-center gap-1">

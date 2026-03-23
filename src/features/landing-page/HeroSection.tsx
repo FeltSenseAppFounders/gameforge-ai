@@ -3,7 +3,7 @@ export function HeroSection() {
     <section className="relative min-h-screen bg-surface-dark flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-32 pb-24 overflow-hidden">
       {/* Neon green radial glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-[800px] h-[600px] bg-primary-light/5 rounded-full blur-[120px]" />
+        <div className="w-[300px] h-[200px] md:w-[500px] md:h-[400px] lg:w-[800px] lg:h-[600px] bg-primary-light/5 rounded-full blur-[80px] md:blur-[100px] lg:blur-[120px]" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto">
@@ -48,7 +48,7 @@ export function HeroSection() {
         <div className="mt-16 max-w-5xl mx-auto rounded-lg border border-primary-light/20 bg-surface/50 shadow-xl overflow-hidden p-2 glow-green">
           <div className="bg-surface rounded-md aspect-video flex">
             {/* Left side: Chat panel mockup */}
-            <div className="w-2/5 border-r border-neutral-700 p-4 md:p-6 flex flex-col gap-3">
+            <div className="w-2/5 border-r border-neutral-700 p-4 md:p-6 flex flex-col gap-3 hidden md:flex">
               {/* Chat header */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-primary-light animate-pulse" />
@@ -79,7 +79,7 @@ export function HeroSection() {
               </div>
             </div>
             {/* Right side: Game preview mockup */}
-            <div className="w-3/5 p-4 md:p-6 flex flex-col">
+            <div className="w-full md:w-3/5 p-4 md:p-6 flex flex-col">
               {/* Controls bar */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-2 w-16 bg-primary-light/20 rounded-sm" />

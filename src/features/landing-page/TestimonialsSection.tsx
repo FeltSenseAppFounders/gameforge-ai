@@ -50,7 +50,7 @@ export function TestimonialsSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
           {testimonials.map((t, i) => (
             <AnimateOnScroll key={t.name} delay={i * 0.15}>
-              <article className="bg-surface-dark rounded-lg border border-neutral-700 p-8 h-full flex flex-col">
+              <article className="bg-surface-dark rounded-lg border border-neutral-700 p-4 sm:p-6 md:p-8 h-full flex flex-col">
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
