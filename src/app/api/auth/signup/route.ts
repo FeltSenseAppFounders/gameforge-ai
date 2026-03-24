@@ -2,32 +2,27 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendConfirmationEmail } from "@/lib/resend";
 
-/**
- * POST /api/demo/create
- *
- * Creates a demo studio with seeded game projects. User must confirm email before signing in.
- */
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
     return NextResponse.json(
-      { error: "Supabase service role not configured" },
+      { error: "Server configuration error" },
       { status: 500 }
     );
   }
 
   const body = await request.json();
-  const { name, email, password } = body as {
-    name: string;
+  const { email, password, fullName } = body as {
     email: string;
     password: string;
+    fullName: string;
   };
 
-  if (!name || !email || !password) {
+  if (!email || !password || !fullName) {
     return NextResponse.json(
-      { error: "Name, email, and password are required" },
+      { error: "Email, password, and name are required" },
       { status: 400 }
     );
   }
@@ -43,13 +38,12 @@ export async function POST(request: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // 1. Create user with email_confirm: false (email sent via Resend below)
   const { data: userData, error: userError } =
     await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: false,
-      user_metadata: { full_name: name, is_demo: true },
+      user_metadata: { full_name: fullName },
     });
 
   if (userError) {
@@ -59,13 +53,9 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
-    console.error("Failed to create demo user:", userError);
     return NextResponse.json({ error: userError.message }, { status: 400 });
   }
 
-  const userId = userData.user.id;
-
-  // 1b. Generate confirmation link and send via Resend
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const { data: linkData, error: linkError } =
     await supabase.auth.admin.generateLink({
@@ -77,37 +67,21 @@ export async function POST(request: Request) {
 
   if (linkError) {
     console.error("Failed to generate confirmation link:", linkError);
-  } else {
-    const result = await sendConfirmationEmail({
-      to: email,
-      userName: name.split(" ")[0],
-      confirmationUrl: linkData.properties.action_link,
-    });
-    if (!result.success) {
-      console.error("Failed to send confirmation email:", result.error);
-    }
+    return NextResponse.json(
+      { error: "Account created but failed to send confirmation email." },
+      { status: 500 }
+    );
   }
 
-  // 2. Seed demo studio with game projects via RPC
-  const { data: studioId, error: seedError } = await supabase.rpc(
-    "seed_demo_studio",
-    { p_user_id: userId }
-  );
-
-  if (seedError) {
-    console.error("Failed to seed demo studio:", seedError);
-    return NextResponse.json({ error: seedError.message }, { status: 400 });
-  }
-
-  // 3. Insert lead record
-  await supabase.from("leads").insert({
-    email,
-    name: name.trim(),
-    source: "demo_signup",
+  const result = await sendConfirmationEmail({
+    to: email,
+    userName: fullName.split(" ")[0],
+    confirmationUrl: linkData.properties.action_link,
   });
 
-  return NextResponse.json(
-    { studioId, email },
-    { status: 201 }
-  );
+  if (!result.success) {
+    console.error("Failed to send confirmation email:", result.error);
+  }
+
+  return NextResponse.json({ email }, { status: 201 });
 }

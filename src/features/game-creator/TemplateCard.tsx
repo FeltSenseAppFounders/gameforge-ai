@@ -27,9 +27,10 @@ export function TemplateCard({
       <div className="aspect-video bg-surface-dark relative overflow-hidden">
         <iframe
           srcDoc={template.gameCode}
-          sandbox="allow-scripts"
+          sandbox=""
           title={template.name}
           className="w-full h-full pointer-events-none"
+          loading="lazy"
           tabIndex={-1}
         />
 

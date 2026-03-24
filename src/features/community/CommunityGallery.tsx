@@ -244,9 +244,10 @@ export function CommunityGallery({
                   {game.game_code ? (
                     <iframe
                       srcDoc={game.game_code}
-                      sandbox="allow-scripts"
+                      sandbox=""
                       title={game.name}
                       className="w-full h-full pointer-events-none"
+                      loading="lazy"
                       tabIndex={-1}
                     />
                   ) : (

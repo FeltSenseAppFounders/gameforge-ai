@@ -8,7 +8,9 @@ export async function updateSession(request: NextRequest) {
   if (
     pathname === "/" ||
     pathname.startsWith("/try-it-now") ||
-    pathname.startsWith("/play/")
+    pathname.startsWith("/play/") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password")
   ) {
     return NextResponse.next({ request });
   }
