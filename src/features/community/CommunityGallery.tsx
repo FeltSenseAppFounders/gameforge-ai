@@ -5,6 +5,7 @@ import type { GameProject } from "@/core/types";
 import { FeaturedGames } from "./FeaturedGames";
 import { TrendingGames } from "./TrendingGames";
 import { ShareButton } from "./ShareButton";
+import { LikeButton } from "./LikeButton";
 
 const genres = ["all", "shooter", "platformer", "puzzle", "racing", "rpg"];
 
@@ -87,19 +88,10 @@ export function CommunityGallery({
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xs text-neutral-400">
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {playingGame.likes_count}
-            </span>
+            <LikeButton
+              gameId={playingGame.id}
+              initialCount={playingGame.likes_count}
+            />
             <ShareButton
               gameId={playingGame.id}
               gameName={playingGame.name}

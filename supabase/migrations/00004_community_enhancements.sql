@@ -26,10 +26,16 @@ $$;
 DO $$
 DECLARE
   v_mock_studio_id UUID;
+  v_mock_user_id UUID := '00000000-0000-0000-0000-000000000000';
 BEGIN
+  -- Create a mock auth user for the community studio (needed for FK)
+  INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, confirmation_token, recovery_token)
+  VALUES (v_mock_user_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'community@gameforge.ai', crypt('community-mock-password', gen_salt('bf')), now(), now(), now(), '', '')
+  ON CONFLICT (id) DO NOTHING;
+
   -- Create a mock "community" studio for seeded games
   INSERT INTO studios (name, owner_id, subscription_tier)
-  VALUES ('GameForge Community', '00000000-0000-0000-0000-000000000000', 'free')
+  VALUES ('GameForge Community', v_mock_user_id, 'free')
   ON CONFLICT DO NOTHING
   RETURNING id INTO v_mock_studio_id;
 

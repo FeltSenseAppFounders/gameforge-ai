@@ -57,7 +57,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <PlayPageClient gameId={game.id} gameName={game.name} />
+          <PlayPageClient gameId={game.id} gameName={game.name} likesCount={game.likes_count} />
           <Link
             href="/try-it-now"
             className="px-4 py-1.5 rounded text-xs font-bold uppercase bg-[#47761E] text-white hover:bg-[#7CFC00] hover:text-black transition-colors"
@@ -87,12 +87,6 @@ export default async function PlayPage({ params }: PlayPageProps) {
                 <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
               {game.views_count} plays
-            </span>
-            <span className="flex items-center gap-1">
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {game.likes_count} likes
             </span>
           </div>
           <Link
