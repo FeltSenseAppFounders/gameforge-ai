@@ -1,14 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-surface-dark flex items-center justify-center px-4">
+          <div className="w-full max-w-[400px] text-center">
+            <p className="text-sm text-neutral-500">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [verifying, setVerifying] = useState(true);
+
+  useEffect(() => {
+    async function verifyToken() {
+      const tokenHash = searchParams.get("token_hash");
+      const type = searchParams.get("type");
+
+      if (tokenHash && type === "recovery") {
+        const supabase = createClient();
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (error) {
+          setError("This reset link has expired or is invalid. Please request a new one.");
+        } else {
+          setSessionReady(true);
+        }
+      } else {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setSessionReady(true);
+        } else {
+          setError("No valid reset token found. Please request a new password reset.");
+        }
+      }
+      setVerifying(false);
+    }
+    verifyToken();
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +131,47 @@ export default function ResetPasswordPage() {
               className="inline-block bg-primary hover:bg-primary-light text-white rounded px-6 py-3 text-sm font-semibold transition-colors glow-green"
             >
               Sign in
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (verifying) {
+    return (
+      <div className="min-h-screen bg-surface-dark flex items-center justify-center px-4">
+        <div className="w-full max-w-[400px] text-center">
+          <p className="text-sm text-neutral-500">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!sessionReady) {
+    return (
+      <div className="min-h-screen bg-surface-dark flex items-center justify-center px-4">
+        <div className="w-full max-w-[400px] text-center">
+          <a href="/" className="flex items-center justify-center gap-1 mb-8">
+            <span className="text-2xl font-heading text-primary-light uppercase">
+              GAMEFORGE
+            </span>
+            <span className="text-2xl font-heading text-secondary uppercase">
+              AI
+            </span>
+          </a>
+          <div className="bg-surface rounded-lg border border-neutral-700 p-8">
+            <h2 className="text-xl font-heading text-neutral-100 mb-2 uppercase">
+              Invalid or expired link
+            </h2>
+            <p className="text-sm text-neutral-400 mb-6">
+              {error || "This password reset link is no longer valid."}
+            </p>
+            <a
+              href="/forgot-password"
+              className="inline-block bg-primary hover:bg-primary-light text-white rounded px-6 py-3 text-sm font-semibold transition-colors glow-green"
+            >
+              Request new reset link
             </a>
           </div>
         </div>

@@ -52,10 +52,14 @@ export async function POST(request: Request) {
   const userName =
     userData?.user?.user_metadata?.full_name?.split(" ")[0] || "there";
 
+  // Build a direct URL with token_hash instead of using action_link
+  // (action_link goes through Supabase verify which requires PKCE code_verifier)
+  const resetUrl = `${appUrl}/reset-password?token_hash=${linkData.properties.hashed_token}&type=recovery`;
+
   const result = await sendPasswordResetEmail({
     to: email,
     userName,
-    resetUrl: linkData.properties.action_link,
+    resetUrl,
   });
 
   if (!result.success) {
