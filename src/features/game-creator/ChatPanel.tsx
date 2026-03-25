@@ -15,6 +15,8 @@ interface ChatPanelProps {
   isStreaming: boolean;
   streamingText: string;
   onNewGame: () => void;
+  credits?: number;
+  onBuyCredits?: () => void;
 }
 
 function MaxAvatar() {
@@ -74,7 +76,10 @@ export function ChatPanel({
   isStreaming,
   streamingText,
   onNewGame,
+  credits,
+  onBuyCredits,
 }: ChatPanelProps) {
+  const outOfCredits = credits !== undefined && credits <= 0;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -202,46 +207,69 @@ export function ChatPanel({
 
       {/* Input bar */}
       <div className="px-4 py-3 border-t border-neutral-700">
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              isStreaming
-                ? "MAX is building..."
-                : "Describe your game or request changes..."
-            }
-            disabled={isStreaming}
-            rows={1}
-            className="flex-1 bg-surface-dark border border-neutral-700 rounded-lg px-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 resize-none focus:outline-none focus:border-primary/50 disabled:opacity-50 transition-colors"
-          />
-          <button
-            onClick={onSend}
-            disabled={isStreaming || !input.trim()}
-            className="shrink-0 w-10 h-10 rounded-lg bg-primary hover:bg-primary-light disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors glow-green"
-          >
-            <svg
-              width="18"
-              height="18"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="text-white"
+        {outOfCredits ? (
+          <div className="flex flex-col items-center gap-2 py-2">
+            <p className="text-sm text-secondary font-semibold">
+              You&apos;re out of credits
+            </p>
+            <button
+              onClick={onBuyCredits}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold uppercase hover:bg-primary-light transition-colors glow-green"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 12h14m-7-7l7 7-7 7"
+              BUY CREDITS
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  isStreaming
+                    ? "MAX is building..."
+                    : "Describe your game or request changes..."
+                }
+                disabled={isStreaming}
+                rows={1}
+                className="flex-1 bg-surface-dark border border-neutral-700 rounded-lg px-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 resize-none focus:outline-none focus:border-primary/50 disabled:opacity-50 transition-colors"
               />
-            </svg>
-          </button>
-        </div>
-        <p className="text-[10px] text-neutral-600 mt-1.5 px-1">
-          Shift+Enter for new line · MAX generates Phaser.js games
-        </p>
+              <button
+                onClick={onSend}
+                disabled={isStreaming || !input.trim()}
+                className="shrink-0 w-10 h-10 rounded-lg bg-primary hover:bg-primary-light disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors glow-green"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  className="text-white"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 12h14m-7-7l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center justify-between mt-1.5 px-1">
+              <p className="text-[10px] text-neutral-600">
+                Shift+Enter for new line · MAX generates Phaser.js games
+              </p>
+              {credits !== undefined && credits <= 3 && credits > 0 && (
+                <p className="text-[10px] text-secondary font-semibold">
+                  {credits} credit{credits !== 1 ? "s" : ""} left
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
