@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PlayPageClient } from "./PlayPageClient";
+import { injectTouchControls } from "@/lib/inject-touch-controls";
 
 interface PlayPageProps {
   params: Promise<{ id: string }>;
@@ -70,7 +71,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
       {/* Game iframe — full remaining height */}
       <div className="flex-1 relative">
         <iframe
-          srcDoc={game.game_code}
+          srcDoc={injectTouchControls(game.game_code)}
           sandbox="allow-scripts"
           title={game.name}
           className="absolute inset-0 w-full h-full bg-black"

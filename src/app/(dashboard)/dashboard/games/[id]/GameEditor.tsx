@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
@@ -24,8 +24,20 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     game.game_code || null
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"chat" | "preview">(
+    game.game_code ? "preview" : "chat"
+  );
 
   const gameCodeRef = useRef<string | null>(game.game_code || null);
+  const hasAutoSwitched = useRef(!!game.game_code);
+
+  // Auto-switch to preview tab on mobile when game code first becomes available
+  useEffect(() => {
+    if (gameCode && !hasAutoSwitched.current) {
+      hasAutoSwitched.current = true;
+      setActiveTab("preview");
+    }
+  }, [gameCode]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -114,6 +126,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     setMessages([]);
     setInput("");
     setStreamingText("");
+    setActiveTab("chat");
+    hasAutoSwitched.current = false;
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -185,9 +199,37 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   }, [handleSave, game.id]);
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      {/* Chat Panel — left 40% */}
-      <div className="w-[40%] min-w-[320px] border-r border-neutral-700">
+    <div className="-m-4 sm:-m-6 flex flex-col lg:flex-row h-[calc(100dvh-4rem)] overflow-hidden">
+      {/* Mobile tab switcher */}
+      <div className="lg:hidden flex border-b border-neutral-700">
+        <button
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "chat"
+              ? "text-primary-light border-b-2 border-primary-light"
+              : "text-neutral-500 hover:text-neutral-300"
+          }`}
+          onClick={() => setActiveTab("chat")}
+        >
+          CHAT WITH MAX
+        </button>
+        <button
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "preview"
+              ? "text-primary-light border-b-2 border-primary-light"
+              : "text-neutral-500 hover:text-neutral-300"
+          }`}
+          onClick={() => setActiveTab("preview")}
+        >
+          GAME PREVIEW
+        </button>
+      </div>
+
+      {/* Chat Panel — left 40% on desktop, full width on mobile */}
+      <div
+        className={`${
+          activeTab === "chat" ? "flex" : "hidden"
+        } lg:flex lg:w-[40%] flex-col border-r border-neutral-700 min-h-0`}
+      >
         <ChatPanel
           messages={messages}
           input={input}
@@ -199,8 +241,12 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
         />
       </div>
 
-      {/* Game Preview — right 60% */}
-      <div className="flex-1">
+      {/* Game Preview — right 60% on desktop, full width on mobile */}
+      <div
+        className={`${
+          activeTab === "preview" ? "flex" : "hidden"
+        } lg:flex flex-1 flex-col min-h-0`}
+      >
         <GamePreview
           gameCode={gameCode}
           isLoading={isStreaming}
