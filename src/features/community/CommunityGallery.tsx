@@ -190,12 +190,12 @@ export function CommunityGallery({
         </h2>
 
         {/* Genre filter */}
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin">
           {genres.map((genre) => (
             <button
               key={genre}
               onClick={() => setFilter(genre)}
-              className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded border transition-colors whitespace-nowrap ${
+              className={`flex-shrink-0 text-xs font-bold uppercase tracking-wider px-4 py-2 rounded border transition-colors whitespace-nowrap ${
                 filter === genre
                   ? "bg-primary/10 text-primary-light border-primary/40"
                   : "text-neutral-400 border-neutral-700 hover:border-neutral-500 hover:text-neutral-200"

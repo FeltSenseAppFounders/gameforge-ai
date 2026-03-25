@@ -7,7 +7,7 @@ export function ReplayTourButton() {
       onClick={() => {
         window.dispatchEvent(new CustomEvent("gameforge:replay-tour"));
       }}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold text-neutral-500 hover:text-primary-light hover:bg-primary/10 transition-colors duration-150"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold text-neutral-300 hover:text-primary-light hover:bg-primary/10 transition-colors duration-150"
       aria-label="Replay guided tour"
       title="Replay tour"
     >

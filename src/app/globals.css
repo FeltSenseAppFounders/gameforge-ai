@@ -145,6 +145,74 @@
   }
 }
 
+/* ── Intro.js Tour Overrides ── */
+
+.gameforge-tour-tooltip {
+  background-color: #1A1A1A !important;
+  border: 1px solid #404040 !important;
+  border-radius: 8px !important;
+  color: #E5E5E5 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(124, 252, 0, 0.1) !important;
+  max-width: 340px !important;
+}
+
+.gameforge-tour-tooltip .introjs-tooltip-title {
+  color: #7CFC00 !important;
+  font-family: var(--font-heading) !important;
+  font-size: 16px !important;
+  letter-spacing: 0.05em !important;
+}
+
+.gameforge-tour-tooltip .introjs-tooltiptext {
+  color: #D4D4D4 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.gameforge-tour-tooltip .introjs-button {
+  background-color: #2A2A2A !important;
+  border: 1px solid #404040 !important;
+  border-radius: 4px !important;
+  color: #E5E5E5 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  text-shadow: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.gameforge-tour-tooltip .introjs-button:hover {
+  background-color: #47761E !important;
+  border-color: #7CFC00 !important;
+  color: #fff !important;
+}
+
+.gameforge-tour-tooltip .introjs-button:focus {
+  box-shadow: 0 0 0 3px rgba(124, 252, 0, 0.35) !important;
+}
+
+.gameforge-tour-tooltip .introjs-skipbutton {
+  color: #737373 !important;
+  font-size: 18px !important;
+}
+
+.gameforge-tour-tooltip .introjs-skipbutton:hover {
+  color: #E5E5E5 !important;
+}
+
+.gameforge-tour-tooltip .introjs-progressbar {
+  background-color: #2A2A2A !important;
+}
+
+.gameforge-tour-tooltip .introjs-progress {
+  background-color: #7CFC00 !important;
+}
+
+.gameforge-tour-highlight {
+  border: 2px solid rgba(124, 252, 0, 0.4) !important;
+  border-radius: 8px !important;
+}
+
 /* ── Animations ── */
 
 @keyframes pulse-neon {
