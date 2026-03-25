@@ -4,7 +4,7 @@
 -- ============================================================
 
 -- 1. Add credits column to studios (default 10 free credits)
-ALTER TABLE studios ADD COLUMN credits INT NOT NULL DEFAULT 10;
+ALTER TABLE studios ADD COLUMN credits INT NOT NULL DEFAULT 20;
 
 -- 2. Credit purchases — tracks Stripe checkout fulfillment
 CREATE TABLE credit_purchases (

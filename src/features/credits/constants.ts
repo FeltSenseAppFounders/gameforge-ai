@@ -1,27 +1,19 @@
 export const CREDIT_PACKS = [
   {
-    id: "pack_10",
-    credits: 10,
-    priceCents: 499,
-    label: "10 CREDITS",
-    description: "Get started",
-    popular: false,
-  },
-  {
-    id: "pack_50",
+    id: "starter",
     credits: 50,
-    priceCents: 1999,
-    label: "50 CREDITS",
-    description: "Most popular",
-    popular: true,
+    priceCents: 1299,
+    label: "STARTER",
+    description: "50 credits",
+    popular: false,
   },
   {
-    id: "pack_200",
-    credits: 200,
-    priceCents: 5999,
-    label: "200 CREDITS",
-    description: "Best value",
-    popular: false,
+    id: "pro",
+    credits: 150,
+    priceCents: 2999,
+    label: "PRO",
+    description: "150 credits",
+    popular: true,
   },
 ] as const;
 

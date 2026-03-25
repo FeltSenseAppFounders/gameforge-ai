@@ -32,14 +32,12 @@ export async function createCheckoutSession(packId: string) {
   }
 
   const stripe = getStripe();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     mode: "payment",
     payment_method_types: ["card"],
     redirect_on_completion: "never",
-    return_url: `${appUrl}/dashboard?credits=purchased`,
     line_items: [
       {
         price_data: {

@@ -53,7 +53,7 @@ export function CreditsPurchaseModal({
         onClick={handleClose}
       />
 
-      <div className="relative bg-surface border border-primary/30 rounded-lg max-w-lg w-full p-6 shadow-2xl">
+      <div className="relative bg-surface border border-primary/30 rounded-lg max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -87,7 +87,7 @@ export function CreditsPurchaseModal({
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {CREDIT_PACKS.map((pack) => (
                 <div
                   key={pack.id}
