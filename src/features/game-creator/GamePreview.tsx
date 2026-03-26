@@ -2,6 +2,7 @@
 
 import { useRef, useCallback } from "react";
 import { ShareButton } from "@/features/community/ShareButton";
+import { injectTouchControls } from "@/lib/inject-touch-controls";
 
 interface GamePreviewProps {
   gameCode: string | null;
@@ -52,7 +53,7 @@ export function GamePreview({
       // Force reload by clearing and re-setting srcdoc
       iframe.srcdoc = "";
       requestAnimationFrame(() => {
-        iframe.srcdoc = gameCode;
+        iframe.srcdoc = injectTouchControls(gameCode);
       });
     }
   }, [gameCode]);
@@ -127,7 +128,7 @@ export function GamePreview({
       {/* Controls bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-700 bg-surface">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-primary-light uppercase tracking-wider">
+          <span className="text-xs font-semibold text-primary-light uppercase tracking-wider truncate max-w-[100px] sm:max-w-none">
             {gameName || "GAME PREVIEW"}
           </span>
           {isLoading && (
@@ -140,12 +141,12 @@ export function GamePreview({
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           {/* Restart */}
           <button
             onClick={handleRestart}
             title="Restart game (reload from beginning)"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold text-primary-light border border-primary/40 hover:border-primary-light hover:bg-primary/10 transition-colors"
+            className="flex items-center px-2 sm:px-3 py-1.5 rounded text-xs font-semibold text-primary-light border border-primary/40 hover:border-primary-light hover:bg-primary/10 transition-colors"
           >
             <svg
               width="14"
@@ -161,7 +162,7 @@ export function GamePreview({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
-            RESTART
+            <span className="hidden sm:inline ml-1.5">RESTART</span>
           </button>
 
           {/* Fullscreen */}
@@ -223,7 +224,7 @@ export function GamePreview({
       <div className="flex-1 relative">
         <iframe
           ref={iframeRef}
-          srcDoc={gameCode ?? undefined}
+          srcDoc={gameCode ? injectTouchControls(gameCode) : undefined}
           sandbox="allow-scripts"
           title="Game preview"
           className="absolute inset-0 w-full h-full bg-black"

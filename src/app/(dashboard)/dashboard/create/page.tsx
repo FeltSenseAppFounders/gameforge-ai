@@ -208,7 +208,9 @@ function CreateGameContent() {
 
       if (!studio) throw new Error("No studio found");
 
-      if (gameProjectId) {
+      let currentProjectId = gameProjectId;
+
+      if (currentProjectId) {
         // Update existing project
         await supabase
           .from("game_projects")
@@ -217,7 +219,7 @@ function CreateGameContent() {
             status: "playable",
             updated_at: new Date().toISOString(),
           })
-          .eq("id", gameProjectId);
+          .eq("id", currentProjectId);
       } else {
         // Create new project
         const { data: project } = await supabase
@@ -234,6 +236,7 @@ function CreateGameContent() {
           .single();
 
         if (project) {
+          currentProjectId = project.id;
           setGameProjectId(project.id);
         }
       }
@@ -242,7 +245,7 @@ function CreateGameContent() {
       await supabase.from("chat_sessions").upsert(
         {
           studio_id: studio.id,
-          game_project_id: gameProjectId,
+          game_project_id: currentProjectId,
           messages: messages.map((m) => ({
             role: m.role,
             content: m.content,
@@ -283,7 +286,7 @@ function CreateGameContent() {
   }, [gameProjectId, handleSave]);
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="-m-4 sm:-m-6 flex flex-col lg:flex-row h-[calc(100dvh-4rem)] overflow-hidden">
       {/* Mobile tab switcher */}
       <div className="lg:hidden flex border-b border-neutral-700">
         <button
