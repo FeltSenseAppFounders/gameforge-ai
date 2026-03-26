@@ -63,6 +63,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
             content: m.content,
           })),
           currentGameCode: gameCodeRef.current || undefined,
+          gameProjectId: game.id,
+          gameName: game.name,
         }),
       });
 

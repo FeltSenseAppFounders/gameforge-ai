@@ -90,6 +90,8 @@ function CreateGameContent() {
             content: m.content,
           })),
           currentGameCode: gameCodeRef.current || undefined,
+          gameProjectId: gameProjectId || undefined,
+          gameName: gameName || undefined,
         }),
       });
 
