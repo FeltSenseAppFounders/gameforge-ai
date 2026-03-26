@@ -52,14 +52,12 @@ export async function createCheckoutSession(packId: string) {
       },
     ],
     metadata: {
-      product: "gameforge",
       pack_id: pack.id,
       studio_id: studio.id,
       credits_amount: String(pack.credits),
     },
     payment_intent_data: {
       metadata: {
-        product: "gameforge",
         pack_id: pack.id,
         studio_id: studio.id,
         credits_amount: String(pack.credits),
