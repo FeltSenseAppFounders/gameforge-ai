@@ -24,6 +24,7 @@ function CreateGameContent() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
+  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | null>(null);
   const [gameCode, setGameCode] = useState<string | null>(null);
   const [gameName, setGameName] = useState<string>("");
   const [gameProjectId, setGameProjectId] = useState<string | null>(null);
@@ -128,6 +129,9 @@ function CreateGameContent() {
               if (parsed.error) {
                 throw new Error(parsed.error);
               }
+              if (parsed.status) {
+                setStreamPhase(parsed.status);
+              }
               if (parsed.text) {
                 fullText += parsed.text;
                 setStreamingText(fullText);
@@ -157,7 +161,23 @@ function CreateGameContent() {
         }
       }
 
+      // Final extraction pass — handles truncated responses (auto-closes HTML)
+      if (!gameCodeRef.current && fullText.trim()) {
+        const code = extractGameCode(fullText, false);
+        if (code) {
+          setGameCode(code);
+          gameCodeRef.current = code;
+          if (!gameName && updatedMessages.length > 0) {
+            const firstMsg = updatedMessages[0].content;
+            setGameName(firstMsg.length > 40 ? firstMsg.slice(0, 40) + "..." : firstMsg);
+          }
+        }
+      }
+
       // Add completed assistant message
+      if (!fullText.trim()) {
+        fullText = "\u26a0\ufe0f MAX couldn't generate a response. Please try again with a more specific description.";
+      }
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content: fullText,
@@ -173,6 +193,7 @@ function CreateGameContent() {
     } finally {
       setIsStreaming(false);
       setStreamingText("");
+      setStreamPhase(null);
       refetchCredits();
     }
   }, [input, messages, isStreaming, gameName, refetchCredits]);
@@ -326,6 +347,7 @@ function CreateGameContent() {
           onSend={sendMessage}
           isStreaming={isStreaming}
           streamingText={streamingText}
+          streamPhase={streamPhase}
           onNewGame={handleNewGame}
           credits={credits}
           onBuyCredits={openPurchaseModal}

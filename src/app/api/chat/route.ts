@@ -4,13 +4,20 @@ import { buildSystemPrompt, extractGameCode } from "@/lib/prompts/game-creator";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-function deltaQueueToSSE(deltas: string[], getDone: () => boolean) {
+// Detect if user is requesting a 3D game
+function detect3D(messages: { role: string; content: string }[]): boolean {
+  const lastMsg = messages[messages.length - 1]?.content?.toLowerCase() ?? "";
+  const keywords = ["3d", "three.js", "threejs", "first person", "third person", "voxel", "3d runner", "flight sim", "marble"];
+  return keywords.some((k) => lastMsg.includes(k));
+}
+
+function deltaQueueToSSE(deltas: Record<string, string>[], getDone: () => boolean) {
   let cursor = 0;
   const encoder = new TextEncoder();
 
@@ -20,7 +27,7 @@ function deltaQueueToSSE(deltas: string[], getDone: () => boolean) {
         await new Promise((r) => setTimeout(r, 15));
       }
       while (cursor < deltas.length) {
-        const data = JSON.stringify({ text: deltas[cursor++] });
+        const data = JSON.stringify(deltas[cursor++]);
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       }
       if (getDone() && cursor >= deltas.length) {
@@ -73,24 +80,41 @@ export async function POST(request: Request) {
       return Response.json({ error: "Messages are required" }, { status: 400 });
     }
 
-    // Build prompt
-    let systemPrompt = buildSystemPrompt(genre);
+    // Detect if user wants a 3D game
+    const wants3D = detect3D(messages);
+
+    // Build system prompt with optional genre hints and 3D mode
+    let systemPrompt = buildSystemPrompt(genre, wants3D);
     if (currentGameCode) {
       systemPrompt += `\n\n## CURRENT GAME CODE\nThe user has an existing game. Here is the current code:\n\n\`\`\`html\n${currentGameCode}\n\`\`\`\n\nModify this code based on the user's request. Generate the COMPLETE updated file.`;
     }
 
     // Start Claude stream — runs server-side to completion via event callbacks
-    const deltas: string[] = [];
+    // Delta queue holds serialized SSE payloads (text deltas + status events)
+    const deltas: Record<string, string>[] = [];
     let streamDone = false;
 
     const stream = anthropic.messages
       .stream({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8192,
+        model: "claude-opus-4-6",
+        max_tokens: 20000,
+        thinking: { type: "enabled", budget_tokens: 10000 },
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
       })
-      .on("text", (text) => deltas.push(text))
+      .on("streamEvent", (event) => {
+        if (event.type === "content_block_start") {
+          const type = event.content_block.type;
+          if (type === "thinking") {
+            deltas.push({ status: "thinking" });
+          } else if (type === "text") {
+            deltas.push({ status: "generating" });
+          }
+        }
+      })
+      .on("text", (text) => {
+        deltas.push({ text });
+      })
       .on("end", () => { streamDone = true; })
       .on("error", () => { streamDone = true; });
 

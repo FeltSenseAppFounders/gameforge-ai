@@ -1,8 +1,9 @@
-// GameForge — Inject virtual touch controls into game HTML
-// D-pad (bottom-left) + Action button (bottom-right)
-// Only visible on touch devices. Dispatches synthetic KeyboardEvents
-// that Phaser 3's createCursorKeys() picks up natively.
+// GameForge — Inject GF helper library + virtual touch controls into game HTML.
+// GF library goes in <head> (before game code), touch controls go before </body>.
 
+import { GAMEFORGE_CORE_JS } from "./gameforge-core";
+
+// Touch controls block (same as before — D-pad + action button, touch devices only)
 const TOUCH_CONTROLS_BLOCK = `
 <!-- GameForge Touch Controls -->
 <style>
@@ -136,7 +137,6 @@ canvas { position: relative; z-index: 1; }
   if (!container) return;
   container.style.display = 'block';
 
-  // Add viewport meta if missing
   if (!document.querySelector('meta[name="viewport"]')) {
     var meta = document.createElement('meta');
     meta.name = 'viewport';
@@ -165,10 +165,7 @@ canvas { position: relative; z-index: 1; }
     window.dispatchEvent(evt);
   }
 
-  // Multi-touch tracking: touch.identifier -> keyName
   var activeTouches = {};
-
-  // Attach listeners directly to each button (not the container)
   var buttons = container.querySelectorAll('[data-key]');
 
   buttons.forEach(function(btn) {
@@ -193,7 +190,6 @@ canvas { position: relative; z-index: 1; }
           delete activeTouches[id];
         }
       }
-      // Only deactivate if no remaining touches on this button
       var stillActive = false;
       for (var key in activeTouches) {
         if (activeTouches[key].element === btn) { stillActive = true; break; }
@@ -212,17 +208,27 @@ canvas { position: relative; z-index: 1; }
 `;
 
 /**
- * Injects virtual touch controls into a game's HTML string.
- * Controls only appear on touch-capable devices.
- * Dispatches synthetic KeyboardEvents that Phaser 3's
- * createCursorKeys() and keyboard listeners detect natively.
+ * Injects the GF helper library and virtual touch controls into game HTML.
+ * - GF library: injected before </head> (available to game scripts)
+ * - Touch controls: injected before </body> (D-pad + action button)
  */
-export function injectTouchControls(html: string): string {
-  const bodyCloseIdx = html.lastIndexOf("</body>");
-  if (bodyCloseIdx === -1) {
-    return html + TOUCH_CONTROLS_BLOCK;
+export function injectGameHelpers(html: string): string {
+  // 1. Inject GF core library before </head>
+  const headCloseIdx = html.indexOf("</head>");
+  if (headCloseIdx !== -1) {
+    html = html.slice(0, headCloseIdx) + GAMEFORGE_CORE_JS + html.slice(headCloseIdx);
+  } else {
+    // No </head> tag — prepend to the HTML
+    html = GAMEFORGE_CORE_JS + html;
   }
-  return (
-    html.slice(0, bodyCloseIdx) + TOUCH_CONTROLS_BLOCK + html.slice(bodyCloseIdx)
-  );
+
+  // 2. Inject touch controls before </body>
+  const bodyCloseIdx = html.lastIndexOf("</body>");
+  if (bodyCloseIdx !== -1) {
+    html = html.slice(0, bodyCloseIdx) + TOUCH_CONTROLS_BLOCK + html.slice(bodyCloseIdx);
+  } else {
+    html = html + TOUCH_CONTROLS_BLOCK;
+  }
+
+  return html;
 }
