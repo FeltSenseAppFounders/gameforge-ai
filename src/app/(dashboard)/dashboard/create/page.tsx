@@ -7,6 +7,7 @@ import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
 import { createClient } from "@/lib/supabase/client";
 import { GAME_TEMPLATES } from "@/lib/game-templates";
+import { useCredits } from "@/features/credits/CreditsProvider";
 import type { ChatMessage } from "@/features/game-creator/ChatPanel";
 
 export default function CreateGamePage() {
@@ -29,6 +30,7 @@ function CreateGameContent() {
   const [gameProjectId, setGameProjectId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
+  const { balance: credits, refetch: refetchCredits, openPurchaseModal } = useCredits();
 
   // Ref to keep current gameCode accessible inside async callbacks
   const gameCodeRef = useRef<string | null>(null);
@@ -90,6 +92,13 @@ function CreateGameContent() {
           currentGameCode: gameCodeRef.current || undefined,
         }),
       });
+
+      if (res.status === 402) {
+        openPurchaseModal();
+        setMessages((prev) => prev.slice(0, -1)); // Remove the user message we just added
+        setIsStreaming(false);
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status}`);
@@ -183,8 +192,9 @@ function CreateGameContent() {
       setIsStreaming(false);
       setStreamingText("");
       setStreamPhase(null);
+      refetchCredits();
     }
-  }, [input, messages, isStreaming, gameName]);
+  }, [input, messages, isStreaming, gameName, refetchCredits]);
 
   const handleNewGame = useCallback(() => {
     setMessages([]);
@@ -337,6 +347,8 @@ function CreateGameContent() {
           streamingText={streamingText}
           streamPhase={streamPhase}
           onNewGame={handleNewGame}
+          credits={credits}
+          onBuyCredits={openPurchaseModal}
         />
       </div>
 

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./SignOutButton";
 import { MobileSidebarTrigger } from "./MobileSidebarTrigger";
 import { ReplayTourButton } from "@/features/onboarding/ReplayTourButton";
+import { CreditBadge } from "@/features/credits/CreditBadge";
 
 export async function TopBar() {
   const supabase = await createClient();
@@ -48,6 +49,7 @@ export async function TopBar() {
             </p>
           </div>
         </div>
+        <CreditBadge />
         <ReplayTourButton />
         <SignOutButton />
       </div>

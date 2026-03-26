@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/prompts/game-creator";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const maxDuration = 120;
 
@@ -16,6 +18,50 @@ function detect3D(messages: { role: string; content: string }[]): boolean {
 
 export async function POST(request: Request) {
   try {
+    // 1. Authenticate user
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 2. Look up studio
+    const { data: studio } = await supabase
+      .from("studios")
+      .select("id")
+      .eq("owner_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!studio) {
+      return Response.json({ error: "No studio found" }, { status: 400 });
+    }
+
+    // 3. Deduct 1 credit atomically (returns false if insufficient)
+    const serviceClient = createServiceClient();
+    const { data: deducted, error: deductError } = await serviceClient.rpc(
+      "deduct_credit",
+      { studio_id: studio.id }
+    );
+
+    if (deductError) {
+      console.error("Credit deduction error:", deductError);
+      return Response.json(
+        { error: "Failed to process credits" },
+        { status: 500 }
+      );
+    }
+
+    if (!deducted) {
+      return Response.json(
+        { error: "insufficient_credits" },
+        { status: 402 }
+      );
+    }
+
     const body = await request.json();
     const { messages, genre, currentGameCode } = body as {
       messages: { role: "user" | "assistant"; content: string }[];
@@ -38,7 +84,7 @@ export async function POST(request: Request) {
       systemPrompt += `\n\n## CURRENT GAME CODE\nThe user has an existing game. Here is the current code:\n\n\`\`\`html\n${currentGameCode}\n\`\`\`\n\nModify this code based on the user's request. Generate the COMPLETE updated file.`;
     }
 
-    // Stream the response — Opus 4.6 with adaptive thinking for best code quality
+    // 4. Stream the response — Opus 4.6 with adaptive thinking for best code quality
     const stream = anthropic.messages.stream({
       model: "claude-opus-4-6",
       max_tokens: 20000,
