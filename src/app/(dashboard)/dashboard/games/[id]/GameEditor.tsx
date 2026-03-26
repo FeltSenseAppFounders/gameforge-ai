@@ -103,6 +103,15 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
         }
       }
 
+      // Final extraction pass — handles truncated responses
+      if (!gameCodeRef.current && fullText.trim()) {
+        const code = extractGameCode(fullText, false);
+        if (code) {
+          setGameCode(code);
+          gameCodeRef.current = code;
+        }
+      }
+
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content: fullText,

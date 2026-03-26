@@ -14,6 +14,7 @@ interface ChatPanelProps {
   onSend: () => void;
   isStreaming: boolean;
   streamingText: string;
+  streamPhase?: "thinking" | "generating" | null;
   onNewGame: () => void;
 }
 
@@ -73,6 +74,7 @@ export function ChatPanel({
   onSend,
   isStreaming,
   streamingText,
+  streamPhase,
   onNewGame,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -134,12 +136,14 @@ export function ChatPanel({
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
-                  { label: "Space Shooter", prompt: "Make a space shooter with power-ups and enemy waves" },
-                  { label: "Platformer", prompt: "Build a platformer with double-jump, coins, and moving platforms" },
-                  { label: "Racing", prompt: "Create a top-down racer with speed boosts and obstacles" },
-                  { label: "Puzzle", prompt: "Make a color-matching puzzle with combos and a timer" },
-                  { label: "Snake", prompt: "Build a neon snake game that gets faster as you eat" },
-                  { label: "Dungeon RPG", prompt: "Make a dungeon crawler with rooms, enemies, and loot" },
+                  { label: "Space Shooter", prompt: "Make an epic space shooter with detailed ship sprites, particle explosions, power-ups, sound effects, and boss fights every 5 waves" },
+                  { label: "Platformer", prompt: "Build a polished platformer with a character that has arms and legs, double-jump, moving platforms, coin collection with sparkle effects, and sound effects" },
+                  { label: "Tower Defense", prompt: "Create a tower defense game with a winding path, 3 tower types (basic, splash, slow), enemy waves, upgrade system, and gold economy" },
+                  { label: "Endless Runner", prompt: "Make a fast-paced endless runner with 3-lane switching, jump/slide, procedural obstacles, coins, speed ramp, and distance scoring" },
+                  { label: "Bullet Hell", prompt: "Build an intense bullet hell survival game — dodge spiral and burst projectile patterns, collect power-ups, screen-clear bombs, and survive as long as possible" },
+                  { label: "Dungeon RPG", prompt: "Make a dungeon crawler with tile-based movement, procedural rooms, bump combat with damage numbers, potions, keys, and floor progression" },
+                  { label: "3D Runner", prompt: "Create a 3D endless runner using Three.js — 3 lanes, jump over barriers, collect floating coins, speed increases over time, third-person camera" },
+                  { label: "3D Flight", prompt: "Build a 3D flight game with Three.js — fly through rings in the sky, avoid obstacles, third-person camera following the aircraft, speed boost with space" },
                 ].map(
                   (suggestion) => (
                     <button
@@ -190,6 +194,16 @@ export function ChatPanel({
                 <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">
                   {stripGameCode(streamingText)}
                 </p>
+              ) : streamPhase === "thinking" ? (
+                <div className="flex items-center gap-2 text-sm text-primary-light">
+                  <span className="animate-pulse">🧠</span>
+                  <span>MAX is thinking<span className="animate-pulse">...</span></span>
+                </div>
+              ) : streamPhase === "generating" ? (
+                <div className="flex items-center gap-2 text-sm text-primary-light">
+                  <span className="animate-pulse">⚡</span>
+                  <span>MAX is writing code<span className="animate-pulse">...</span></span>
+                </div>
               ) : (
                 <TypingIndicator />
               )}
@@ -240,7 +254,7 @@ export function ChatPanel({
           </button>
         </div>
         <p className="text-[10px] text-neutral-600 mt-1.5 px-1">
-          Shift+Enter for new line · MAX generates Phaser.js games
+          Shift+Enter for new line · MAX generates 2D &amp; 3D browser games
         </p>
       </div>
     </div>

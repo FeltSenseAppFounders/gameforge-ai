@@ -2,7 +2,7 @@
 
 import { useRef, useCallback } from "react";
 import { ShareButton } from "@/features/community/ShareButton";
-import { injectTouchControls } from "@/lib/inject-touch-controls";
+import { injectGameHelpers } from "@/lib/inject-game-helpers";
 
 interface GamePreviewProps {
   gameCode: string | null;
@@ -53,7 +53,7 @@ export function GamePreview({
       // Force reload by clearing and re-setting srcdoc
       iframe.srcdoc = "";
       requestAnimationFrame(() => {
-        iframe.srcdoc = injectTouchControls(gameCode);
+        iframe.srcdoc = injectGameHelpers(gameCode);
       });
     }
   }, [gameCode]);
@@ -224,7 +224,7 @@ export function GamePreview({
       <div className="flex-1 relative">
         <iframe
           ref={iframeRef}
-          srcDoc={gameCode ? injectTouchControls(gameCode) : undefined}
+          srcDoc={gameCode ? injectGameHelpers(gameCode) : undefined}
           sandbox="allow-scripts"
           title="Game preview"
           className="absolute inset-0 w-full h-full bg-black"
