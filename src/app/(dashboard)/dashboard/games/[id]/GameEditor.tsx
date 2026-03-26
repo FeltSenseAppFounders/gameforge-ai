@@ -5,6 +5,7 @@ import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
 import { createClient } from "@/lib/supabase/client";
+import { useCredits } from "@/features/credits/CreditsProvider";
 import type { ChatMessage } from "@/features/game-creator/ChatPanel";
 import type { GameProject } from "@/core/types";
 
@@ -24,6 +25,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     game.game_code || null
   );
   const [isSaving, setIsSaving] = useState(false);
+  const { balance: credits, refetch: refetchCredits, openPurchaseModal } =
+    useCredits();
   const [activeTab, setActiveTab] = useState<"chat" | "preview">(
     game.game_code ? "preview" : "chat"
   );
@@ -62,6 +65,13 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           currentGameCode: gameCodeRef.current || undefined,
         }),
       });
+
+      if (res.status === 402) {
+        openPurchaseModal();
+        setMessages((prev) => prev.slice(0, -1));
+        setIsStreaming(false);
+        return;
+      }
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);
 
@@ -118,8 +128,9 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     } finally {
       setIsStreaming(false);
       setStreamingText("");
+      refetchCredits();
     }
-  }, [input, messages, isStreaming]);
+  }, [input, messages, isStreaming, refetchCredits]);
 
   const handleNewGame = useCallback(() => {
     // For existing games, just clear chat but keep the game
@@ -238,6 +249,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           isStreaming={isStreaming}
           streamingText={streamingText}
           onNewGame={handleNewGame}
+          credits={credits}
+          onBuyCredits={openPurchaseModal}
         />
       </div>
 

@@ -6,6 +6,7 @@ export interface Studio {
   name: string;
   owner_id: string;
   subscription_tier: string;
+  credits: number;
   created_at: string;
   updated_at: string;
 }
@@ -66,3 +67,4 @@ export type GameGenre = "platformer" | "shooter" | "puzzle" | "racing" | "rpg" |
 
 // Game statuses
 export type GameStatus = "draft" | "playable" | "published";
+
