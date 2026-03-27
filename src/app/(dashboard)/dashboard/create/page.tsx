@@ -108,7 +108,9 @@ function CreateGameContent() {
             role: m.role,
             content: m.content,
           })),
-          currentGameCode: gameCodeRef.current || undefined,
+          // Only send game code when no project exists yet (template first message);
+          // once a project ID exists, server loads code from DB
+          ...(gameProjectId ? {} : { currentGameCode: gameCodeRef.current || undefined }),
           gameProjectId: gameProjectId || undefined,
           gameName: gameName || undefined,
           model: selectedModel,
@@ -271,7 +273,10 @@ function CreateGameContent() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            gameCode: gameCodeRef.current,
+            // Send gameProjectId when available (server loads from DB);
+            // fallback to sending gameCode for template edge case (no project yet)
+            gameProjectId: gameProjectId || undefined,
+            ...(!gameProjectId ? { gameCode: gameCodeRef.current } : {}),
             errors: errorSummaries,
             attemptNumber: autoFixAttempts.current,
           }),

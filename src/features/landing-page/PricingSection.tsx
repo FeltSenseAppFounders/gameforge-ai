@@ -2,51 +2,49 @@ import { AnimateOnScroll } from "./AnimateOnScroll";
 
 const tiers = [
   {
-    name: "FREE",
-    price: "$0",
-    period: "/mo",
-    description: "Get started building games for free.",
+    name: "STARTER",
+    price: "$12.99",
+    period: "",
+    description: "50 credits to get building.",
     features: [
-      "5 games per month",
-      "Chat with MAX",
+      "50 AI generation credits",
+      "Chat with MAX (Sonnet)",
       "Live game preview",
       "Community gallery access",
-      "Basic game templates",
+      "Export game code",
     ],
-    cta: "START FREE",
+    cta: "GET STARTED",
     featured: false,
   },
   {
     name: "PRO",
-    price: "$29",
-    period: "/mo",
-    description: "Unlimited creation for serious builders.",
+    price: "$29.99",
+    period: "",
+    description: "150 credits for serious builders.",
     features: [
-      "Unlimited games",
-      "Priority MAX responses",
+      "150 AI generation credits",
+      "Chat with MAX (Sonnet)",
+      "MAX PRO mode (Opus)",
+      "Live game preview",
+      "Community gallery access",
       "Export game code",
-      "Custom thumbnails",
-      "Advanced game features",
       "Priority support",
-      "No watermark",
     ],
     cta: "GO PRO",
     featured: true,
   },
   {
-    name: "STUDIO",
-    price: "Custom",
+    name: "MEGA",
+    price: "$79.99",
     period: "",
-    description: "For teams and educational institutions.",
+    description: "500 credits — best value for power users.",
     features: [
+      "500 AI generation credits",
       "Everything in Pro",
-      "API access",
-      "Team collaboration",
-      "Custom AI training",
-      "Dedicated support",
-      "White-label option",
+      "Best price per credit",
+      "Bulk creation sessions",
     ],
-    cta: "CONTACT US",
+    cta: "GO MEGA",
     featured: false,
   },
 ];
@@ -80,7 +78,7 @@ export function PricingSection() {
             CHOOSE YOUR LOADOUT
           </h2>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
-            Start free. Upgrade when you&apos;re ready to go unlimited.
+            10 free credits on signup. Buy more when you&apos;re ready.
           </p>
         </AnimateOnScroll>
 

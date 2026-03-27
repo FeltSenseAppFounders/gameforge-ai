@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { extractGameCode } from "@/lib/prompts/game-creator";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const maxDuration = 120;
 
@@ -77,25 +78,63 @@ export async function POST(request: Request) {
     if (!studio)
       return Response.json({ error: "No studio found" }, { status: 400 });
 
+    // Rate limit: 10 requests per minute per user
+    if (!rateLimit(`fix-game:${user.id}`, 10, 60_000)) {
+      return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
     // Parse request (supports both new array format and legacy single error)
     const body = (await request.json()) as {
-      gameCode: string;
+      gameCode?: string;
+      gameProjectId?: string;
       errors?: string[];
       error?: string;
       attemptNumber?: number;
     };
-    const { gameCode, attemptNumber = 1 } = body;
+    const { attemptNumber = 1 } = body;
     const errorMessages: string[] = body.errors
       ? body.errors
       : body.error
         ? [body.error]
         : [];
 
+    // Resolve game code: prefer DB (when gameProjectId exists), fallback to client payload
+    let gameCode = body.gameCode;
+    if (!gameCode && body.gameProjectId) {
+      const { data: project } = await supabase
+        .from("game_projects")
+        .select("game_code")
+        .eq("id", body.gameProjectId)
+        .eq("studio_id", studio.id) // authorization: user can only fix own games
+        .single();
+      gameCode = project?.game_code || undefined;
+    }
+
     if (!gameCode || errorMessages.length === 0) {
       return Response.json(
-        { error: "gameCode and at least one error are required" },
+        { error: "Game code and at least one error are required" },
         { status: 400 }
       );
+    }
+
+    // Input validation — prevent oversized payloads
+    const MAX_GAME_CODE_LENGTH = 200_000;
+    const MAX_ERROR_LENGTH = 2000;
+    const MAX_ERRORS = 10;
+
+    if (gameCode.length > MAX_GAME_CODE_LENGTH) {
+      return Response.json({ error: "Game code too large" }, { status: 400 });
+    }
+    if (errorMessages.length > MAX_ERRORS) {
+      return Response.json({ error: "Too many errors" }, { status: 400 });
+    }
+    for (const e of errorMessages) {
+      if (typeof e !== "string" || e.length > MAX_ERROR_LENGTH) {
+        return Response.json(
+          { error: "Error message too long" },
+          { status: 400 }
+        );
+      }
     }
 
     // Server-side credit deduction
@@ -142,6 +181,14 @@ export async function POST(request: Request) {
     const responseText =
       response.content[0].type === "text" ? response.content[0].text : "";
     const fixedCode = extractGameCode(responseText) || extractGameCode(responseText, false);
+
+    // Persist fixed code to DB so subsequent attempts load the latest fix
+    if (fixedCode && body.gameProjectId) {
+      await serviceClient
+        .from("game_projects")
+        .update({ game_code: fixedCode, updated_at: new Date().toISOString() })
+        .eq("id", body.gameProjectId);
+    }
 
     return Response.json({
       fixedCode: fixedCode || null,

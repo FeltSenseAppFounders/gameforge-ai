@@ -72,6 +72,8 @@ export function GamePreview({
     if (!gameCode) { setHasError(false); return; }
     setHasError(false); // Reset on new game code
     function handler(e: MessageEvent) {
+      // Only accept messages from sandboxed srcdoc iframes (origin is "null" string)
+      if (e.origin !== "null") return;
       if (e.data?.type === "gf-game-errors" && Array.isArray(e.data.errors)) {
         setHasError(true);
         onGameError?.(e.data.errors);

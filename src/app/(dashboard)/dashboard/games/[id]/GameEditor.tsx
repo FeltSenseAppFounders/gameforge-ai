@@ -81,7 +81,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
             role: m.role,
             content: m.content,
           })),
-          currentGameCode: gameCodeRef.current || undefined,
+          // Server loads game code from DB using gameProjectId (no need to send it)
           gameProjectId: game.id,
           gameName: game.name,
           model: selectedModel,
@@ -214,7 +214,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            gameCode: gameCodeRef.current,
+            // Server loads game code from DB using gameProjectId (authorization enforced)
+            gameProjectId: game.id,
             errors: errorSummaries,
             attemptNumber: autoFixAttempts.current,
           }),

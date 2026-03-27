@@ -3,6 +3,26 @@
 
 import { GAMEFORGE_CORE_JS } from "./gameforge-core";
 
+// Defensive CSS — prevents game canvas from overflowing the iframe viewport.
+// Covers cases where generated code skips Phaser.Scale.FIT or uses oversized fixed dimensions.
+const CANVAS_CONSTRAINT_CSS = `
+<style>
+/* Defensive: prevent game canvas from overflowing the iframe viewport */
+html, body {
+  overflow: hidden !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+canvas {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  display: block !important;
+}
+</style>
+`;
+
 // Error handler — catches JS errors in the iframe and sends them to parent via postMessage.
 // Must be injected BEFORE all other scripts so it catches early errors.
 // Uses 3 detection layers: window.onerror, capture-phase error listener, health-check fallback.
@@ -28,7 +48,7 @@ const ERROR_HANDLER_BLOCK = `
 
   function pushError(msg,line,col,stack){
     if(collected.length>=MAX_ERRORS)return;
-    collected.push({message:String(msg),line:line||0,column:col||0,stack:stack||''});
+    collected.push({message:String(msg).slice(0,500),line:line||0,column:col||0,stack:String(stack||'').slice(0,1000)});
     if(!timer&&!sent){timer=setTimeout(flush,DEBOUNCE_MS);}
     if(collected.length>=MAX_ERRORS)flush();
   }
@@ -282,7 +302,7 @@ const HEALTH_CHECK_BLOCK = `<script>window.__gf_ok=true;</script>`;
 export function injectGameHelpers(html: string): string {
   // 1. Inject error handler + GF core library before </head>
   // Error handler goes FIRST so it catches errors in all scripts
-  const headScripts = ERROR_HANDLER_BLOCK + GAMEFORGE_CORE_JS;
+  const headScripts = CANVAS_CONSTRAINT_CSS + ERROR_HANDLER_BLOCK + GAMEFORGE_CORE_JS;
   const headCloseIdx = html.indexOf("</head>");
   if (headCloseIdx !== -1) {
     html = html.slice(0, headCloseIdx) + headScripts + html.slice(headCloseIdx);

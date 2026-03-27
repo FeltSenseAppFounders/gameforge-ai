@@ -53,7 +53,7 @@ export function CreditsPurchaseModal({
         onClick={handleClose}
       />
 
-      <div className="relative bg-surface border border-primary/30 rounded-lg max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-surface border border-primary/30 rounded-lg max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -83,11 +83,11 @@ export function CreditsPurchaseModal({
                 GET CREDITS
               </h2>
               <p className="text-sm text-neutral-400 mt-1">
-                Each AI generation costs 1 credit
+                1 credit per new game &middot; 2 credits per iteration
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {CREDIT_PACKS.map((pack) => (
                 <div
                   key={pack.id}

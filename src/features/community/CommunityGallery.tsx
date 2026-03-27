@@ -6,6 +6,7 @@ import { FeaturedGames } from "./FeaturedGames";
 import { TrendingGames } from "./TrendingGames";
 import { ShareButton } from "./ShareButton";
 import { LikeButton } from "./LikeButton";
+import { injectGameHelpers } from "@/lib/inject-game-helpers";
 
 const genres = ["all", "shooter", "platformer", "puzzle", "racing", "rpg"];
 
@@ -111,7 +112,7 @@ export function CommunityGallery({
           <div className="flex-1 relative">
             {playingGame.game_code && (
               <iframe
-                srcDoc={playingGame.game_code}
+                srcDoc={injectGameHelpers(playingGame.game_code)}
                 sandbox="allow-scripts"
                 title={playingGame.name}
                 className="w-full h-full bg-black"

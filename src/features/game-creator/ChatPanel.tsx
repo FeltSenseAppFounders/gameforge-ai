@@ -492,7 +492,7 @@ export function ChatPanel({
             </div>
             <div className="flex items-center justify-between mt-1.5 px-1">
               <p className="text-[10px] text-neutral-600">
-                {selectedModel === "max-pro" ? "8 credits/game" : "1 credit/game"} · Complex games may use up to 12 credits
+                {selectedModel === "max-pro" ? "8 credits/game" : "1–2 credits/msg"} · Iterations cost 2 · Complex games may use more
               </p>
               {credits !== undefined && credits <= 3 && credits > 0 && (
                 <p className="text-[10px] text-secondary font-semibold">

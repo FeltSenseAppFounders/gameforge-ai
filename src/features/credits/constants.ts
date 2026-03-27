@@ -15,6 +15,14 @@ export const CREDIT_PACKS = [
     description: "150 credits",
     popular: true,
   },
+  {
+    id: "mega",
+    credits: 500,
+    priceCents: 7999,
+    label: "MEGA",
+    description: "500 credits",
+    popular: false,
+  },
 ] as const;
 
 export type CreditPackId = (typeof CREDIT_PACKS)[number]["id"];
