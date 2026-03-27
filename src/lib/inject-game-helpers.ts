@@ -3,6 +3,27 @@
 
 import { GAMEFORGE_CORE_JS } from "./gameforge-core";
 
+// Error handler — catches JS errors in the iframe and sends them to parent via postMessage.
+// Must be injected BEFORE all other scripts so it catches early errors.
+const ERROR_HANDLER_BLOCK = `
+<script>
+(function(){
+  var errors=[];
+  window.onerror=function(msg,source,line,col,error){
+    if(errors.length>=3)return false;
+    errors.push(1);
+    try{window.parent.postMessage({type:'gf-game-error',error:{message:String(msg),line:line||0,column:col||0,stack:error&&error.stack||''}},'*');}catch(e){}
+    return false;
+  };
+  window.addEventListener('unhandledrejection',function(e){
+    if(errors.length>=3)return;
+    errors.push(1);
+    try{window.parent.postMessage({type:'gf-game-error',error:{message:'Unhandled: '+String(e.reason),line:0,column:0,stack:''}},'*');}catch(ex){}
+  });
+})();
+</script>
+`;
+
 // Touch controls block (same as before — D-pad + action button, touch devices only)
 const TOUCH_CONTROLS_BLOCK = `
 <!-- GameForge Touch Controls -->
@@ -213,13 +234,14 @@ canvas { position: relative; z-index: 1; }
  * - Touch controls: injected before </body> (D-pad + action button)
  */
 export function injectGameHelpers(html: string): string {
-  // 1. Inject GF core library before </head>
+  // 1. Inject error handler + GF core library before </head>
+  // Error handler goes FIRST so it catches errors in all scripts
+  const headScripts = ERROR_HANDLER_BLOCK + GAMEFORGE_CORE_JS;
   const headCloseIdx = html.indexOf("</head>");
   if (headCloseIdx !== -1) {
-    html = html.slice(0, headCloseIdx) + GAMEFORGE_CORE_JS + html.slice(headCloseIdx);
+    html = html.slice(0, headCloseIdx) + headScripts + html.slice(headCloseIdx);
   } else {
-    // No </head> tag — prepend to the HTML
-    html = GAMEFORGE_CORE_JS + html;
+    html = headScripts + html;
   }
 
   // 2. Inject touch controls before </body>

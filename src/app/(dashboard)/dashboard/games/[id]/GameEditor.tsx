@@ -25,7 +25,12 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     game.game_code || null
   );
   const [isSaving, setIsSaving] = useState(false);
-  const { balance: credits, refetch: refetchCredits, openPurchaseModal } =
+  const [selectedModel, setSelectedModel] = useState<"max" | "max-pro">("max");
+  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null>(null);
+  const [isAutoFixing, setIsAutoFixing] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
+  const [fixUsage, setFixUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
+  const { balance: credits, refetch: refetchCredits, openPurchaseModal, isPaidUser } =
     useCredits();
   const [activeTab, setActiveTab] = useState<"chat" | "preview">(
     game.game_code ? "preview" : "chat"
@@ -33,6 +38,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
 
   const gameCodeRef = useRef<string | null>(game.game_code || null);
   const hasAutoSwitched = useRef(!!game.game_code);
+  const autoFixAttempts = useRef(0);
 
   // Auto-switch to preview tab on mobile when game code first becomes available
   useEffect(() => {
@@ -52,6 +58,9 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     setInput("");
     setIsStreaming(true);
     setStreamingText("");
+    setTokenUsage(null);
+    setFixUsage(null);
+    autoFixAttempts.current = 0;
 
     try {
       const res = await fetch("/api/chat", {
@@ -65,6 +74,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           currentGameCode: gameCodeRef.current || undefined,
           gameProjectId: game.id,
           gameName: game.name,
+          model: selectedModel,
         }),
       });
 
@@ -98,6 +108,21 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
             try {
               const parsed = JSON.parse(data);
               if (parsed.error) throw new Error(parsed.error);
+              if (parsed.usage) {
+                setTokenUsage(JSON.parse(parsed.usage));
+              }
+              if (parsed.status) {
+                if (parsed.status === "insufficient_credits_continue") {
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: "Game generation incomplete — not enough credits to continue. Purchase more credits to generate complex games.",
+                    },
+                  ]);
+                }
+                setStreamPhase(parsed.status);
+              }
               if (parsed.text) {
                 fullText += parsed.text;
                 setStreamingText(fullText);
@@ -139,18 +164,81 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     } finally {
       setIsStreaming(false);
       setStreamingText("");
+      setStreamPhase(null);
       refetchCredits();
     }
-  }, [input, messages, isStreaming, refetchCredits]);
+  }, [input, messages, isStreaming, refetchCredits, selectedModel]);
 
   const handleNewGame = useCallback(() => {
     // For existing games, just clear chat but keep the game
     setMessages([]);
     setInput("");
     setStreamingText("");
+    setTokenUsage(null);
+    setFixUsage(null);
+    autoFixAttempts.current = 0;
     setActiveTab("chat");
     hasAutoSwitched.current = false;
   }, []);
+
+  const handleGameError = useCallback(
+    async (error: { message: string; line: number; column: number }) => {
+      if (isAutoFixing || isStreaming || autoFixAttempts.current >= 1 || !gameCodeRef.current) return;
+      autoFixAttempts.current++;
+      setIsAutoFixing(true);
+      setStreamPhase("auto-fixing");
+
+      try {
+        const res = await fetch("/api/fix-game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameCode: gameCodeRef.current,
+            error: error.message,
+          }),
+        });
+
+        if (res.status === 402) {
+          openPurchaseModal();
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "Auto-fix needs 2 credits but you don't have enough. Purchase more credits to enable auto-fix.",
+            },
+          ]);
+          return;
+        }
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.fixedCode) {
+          setGameCode(data.fixedCode);
+          gameCodeRef.current = data.fixedCode;
+          setFixUsage({
+            input_tokens: data.usage.input_tokens,
+            output_tokens: data.usage.output_tokens,
+            credits_used: data.credits_used,
+          });
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `Auto-fixed an error: "${error.message}" (2 credits)`,
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Auto-fix error:", err);
+      } finally {
+        setIsAutoFixing(false);
+        setStreamPhase(null);
+        refetchCredits();
+      }
+    },
+    [isAutoFixing, isStreaming, openPurchaseModal, refetchCredits]
+  );
 
   const handleSave = useCallback(async () => {
     if (!gameCode) return;
@@ -259,9 +347,16 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           onSend={sendMessage}
           isStreaming={isStreaming}
           streamingText={streamingText}
+          streamPhase={streamPhase}
           onNewGame={handleNewGame}
           credits={credits}
           onBuyCredits={openPurchaseModal}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+          isPaidUser={isPaidUser}
+          tokenUsage={tokenUsage}
+          fixTokenUsage={fixUsage}
+          isAutoFixing={isAutoFixing}
         />
       </div>
 
@@ -280,6 +375,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           gameName={game.name}
           gameProjectId={game.id}
           isPublished={game.status === "published"}
+          onGameError={handleGameError}
+          isAutoFixing={isAutoFixing}
         />
       </div>
     </div>

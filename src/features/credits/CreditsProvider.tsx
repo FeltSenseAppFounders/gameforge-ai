@@ -14,6 +14,7 @@ interface CreditsContextValue {
   balance: number;
   isLoading: boolean;
   hasCredits: boolean;
+  isPaidUser: boolean;
   refetch: () => Promise<void>;
   openPurchaseModal: () => void;
 }
@@ -22,6 +23,7 @@ const CreditsContext = createContext<CreditsContextValue>({
   balance: 0,
   isLoading: true,
   hasCredits: false,
+  isPaidUser: false,
   refetch: async () => {},
   openPurchaseModal: () => {},
 });
@@ -29,6 +31,7 @@ const CreditsContext = createContext<CreditsContextValue>({
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [balance, setBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPaidUser, setIsPaidUser] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const fetchBalance = useCallback(async () => {
@@ -41,13 +44,22 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
 
       const { data: studio } = await supabase
         .from("studios")
-        .select("credits")
+        .select("id, credits")
         .eq("owner_id", user.id)
         .limit(1)
         .single();
 
       if (studio) {
         setBalance(studio.credits);
+
+        // Check if user has ever purchased credits
+        const { count } = await supabase
+          .from("credit_purchases")
+          .select("id", { count: "exact", head: true })
+          .eq("studio_id", studio.id)
+          .eq("status", "completed");
+
+        setIsPaidUser((count ?? 0) > 0);
       }
     } catch (err) {
       console.error("Failed to fetch credit balance:", err);
@@ -75,6 +87,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
         balance,
         isLoading,
         hasCredits: balance > 0,
+        isPaidUser,
         refetch: fetchBalance,
         openPurchaseModal: () => setShowModal(true),
       }}

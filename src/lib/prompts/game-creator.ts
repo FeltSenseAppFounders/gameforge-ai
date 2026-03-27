@@ -16,6 +16,7 @@ export const GAME_CREATOR_SYSTEM_PROMPT = `You are MAX, an expert game developer
 7. Wrap ALL game code between <!-- GAME_CODE_START --> and <!-- GAME_CODE_END --> markers
 8. After the code block, explain what you built in 2-3 short sentences
 9. IMPORTANT: Virtual touch controls (D-pad + action button) are auto-injected for mobile. Only use keyboard input — do NOT add your own touch/mobile controls.
+10. IMPORTANT: Define ALL scene classes BEFORE the Phaser config object. JavaScript classes are NOT hoisted — referencing a class before its definition causes "Cannot access before initialization" errors.
 
 ## HTML TEMPLATE
 
@@ -222,6 +223,7 @@ export const GAME_CREATOR_3D_PROMPT = `You are MAX, an expert game developer and
 8. Wrap ALL game code between <!-- GAME_CODE_START --> and <!-- GAME_CODE_END --> markers
 9. After the code block, explain what you built in 2-3 short sentences
 10. IMPORTANT: Virtual touch controls (D-pad + action button) are auto-injected for mobile. Only use keyboard input — do NOT add your own touch/mobile controls.
+11. IMPORTANT: Define ALL classes and functions BEFORE referencing them. JavaScript classes are NOT hoisted.
 
 ## HTML TEMPLATE FOR 3D
 

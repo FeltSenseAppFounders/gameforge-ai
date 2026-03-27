@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { ShareButton } from "@/features/community/ShareButton";
 import { injectGameHelpers } from "@/lib/inject-game-helpers";
 
@@ -13,6 +13,8 @@ interface GamePreviewProps {
   gameName?: string;
   gameProjectId?: string | null;
   isPublished?: boolean;
+  onGameError?: (error: { message: string; line: number; column: number }) => void;
+  isAutoFixing?: boolean;
 }
 
 function GamepadIcon({ className }: { className?: string }) {
@@ -44,8 +46,25 @@ export function GamePreview({
   gameName,
   gameProjectId,
   isPublished,
+  onGameError,
+  isAutoFixing,
 }: GamePreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [hasError, setHasError] = useState(false);
+
+  // Listen for error messages from the game iframe
+  useEffect(() => {
+    if (!gameCode) { setHasError(false); return; }
+    setHasError(false); // Reset on new game code
+    function handler(e: MessageEvent) {
+      if (e.data?.type === "gf-game-error") {
+        setHasError(true);
+        onGameError?.(e.data.error);
+      }
+    }
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [onGameError, gameCode]);
 
   const handleRestart = useCallback(() => {
     const iframe = iframeRef.current;
@@ -136,6 +155,22 @@ export function GamePreview({
               <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
               <span className="text-[10px] text-secondary font-semibold uppercase">
                 Updating...
+              </span>
+            </div>
+          )}
+          {isAutoFixing && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+              <span className="text-[10px] text-secondary font-semibold uppercase">
+                Auto-fixing...
+              </span>
+            </div>
+          )}
+          {hasError && !isAutoFixing && !isLoading && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              <span className="text-[10px] text-red-400 font-semibold uppercase">
+                Error detected
               </span>
             </div>
           )}

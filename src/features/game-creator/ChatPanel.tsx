@@ -14,10 +14,16 @@ interface ChatPanelProps {
   onSend: () => void;
   isStreaming: boolean;
   streamingText: string;
-  streamPhase?: "thinking" | "generating" | null;
+  streamPhase?: "thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null;
   onNewGame: () => void;
   credits?: number;
   onBuyCredits?: () => void;
+  selectedModel: "max" | "max-pro";
+  onModelChange: (m: "max" | "max-pro") => void;
+  isPaidUser: boolean;
+  tokenUsage?: { input_tokens: number; output_tokens: number; credits_used: number } | null;
+  fixTokenUsage?: { input_tokens: number; output_tokens: number; credits_used: number } | null;
+  isAutoFixing?: boolean;
 }
 
 function MaxAvatar() {
@@ -80,6 +86,12 @@ export function ChatPanel({
   onNewGame,
   credits,
   onBuyCredits,
+  selectedModel,
+  onModelChange,
+  isPaidUser,
+  tokenUsage,
+  fixTokenUsage,
+  isAutoFixing,
 }: ChatPanelProps) {
   const outOfCredits = credits !== undefined && credits <= 0;
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -112,12 +124,39 @@ export function ChatPanel({
     <div className="flex flex-col h-full bg-surface">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-700">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-primary-light animate-pulse" />
-          <span className="text-sm font-bold text-primary-light uppercase tracking-wider">
-            MAX
-          </span>
-          <span className="text-xs text-neutral-500">AI Game Designer</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary-light animate-pulse" />
+            <span className="text-sm font-bold text-primary-light uppercase tracking-wider">
+              MAX
+            </span>
+          </div>
+          {/* Model toggle */}
+          <div className="flex items-center gap-0.5 bg-surface-dark rounded border border-neutral-700 p-0.5">
+            <button
+              onClick={() => onModelChange("max")}
+              className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors ${
+                selectedModel === "max"
+                  ? "bg-primary/20 text-primary-light"
+                  : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              MAX
+            </button>
+            <button
+              onClick={() => isPaidUser ? onModelChange("max-pro") : onBuyCredits?.()}
+              className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors ${
+                selectedModel === "max-pro"
+                  ? "bg-secondary/20 text-secondary"
+                  : isPaidUser
+                    ? "text-neutral-500 hover:text-neutral-300"
+                    : "text-neutral-600 cursor-not-allowed"
+              }`}
+              title={isPaidUser ? "8 credits per game" : "Purchase credits to unlock"}
+            >
+              PRO {!isPaidUser && "🔒"}
+            </button>
+          </div>
         </div>
         <button
           onClick={onNewGame}
@@ -190,6 +229,31 @@ export function ChatPanel({
           </div>
         ))}
 
+        {/* Credit usage after last assistant message */}
+        {!isStreaming && !isAutoFixing && tokenUsage && messages.length > 0 && (
+          <div className="flex gap-3 -mt-2 ml-10">
+            <div className="text-[10px] text-neutral-600 flex items-center gap-2">
+              <span>{tokenUsage.credits_used} credit{tokenUsage.credits_used !== 1 ? "s" : ""} used</span>
+              {fixTokenUsage && (
+                <span className="text-secondary">+ {fixTokenUsage.credits_used} credits auto-fix</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Auto-fixing indicator (outside streaming) */}
+        {isAutoFixing && !isStreaming && (
+          <div className="flex gap-3">
+            <MaxAvatar />
+            <div className="bg-surface-light border border-primary/20 rounded-lg px-4 py-3 max-w-[85%]">
+              <div className="flex items-center gap-2 text-sm text-secondary">
+                <span className="animate-pulse">🔧</span>
+                <span>Fixing error<span className="animate-pulse">...</span> (2 credits)</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Streaming response */}
         {isStreaming && (
           <div className="flex gap-3">
@@ -208,6 +272,21 @@ export function ChatPanel({
                 <div className="flex items-center gap-2 text-sm text-primary-light">
                   <span className="animate-pulse">⚡</span>
                   <span>MAX is writing code<span className="animate-pulse">...</span></span>
+                </div>
+              ) : streamPhase === "continuing" ? (
+                <div className="flex items-center gap-2 text-sm text-secondary">
+                  <span className="animate-pulse">🔄</span>
+                  <span>MAX is continuing<span className="animate-pulse">...</span></span>
+                </div>
+              ) : streamPhase === "finishing" ? (
+                <div className="flex items-center gap-2 text-sm text-secondary">
+                  <span className="animate-pulse">🏁</span>
+                  <span>MAX is wrapping up<span className="animate-pulse">...</span></span>
+                </div>
+              ) : streamPhase === "auto-fixing" ? (
+                <div className="flex items-center gap-2 text-sm text-secondary">
+                  <span className="animate-pulse">🔧</span>
+                  <span>Fixing error<span className="animate-pulse">...</span> (2 credits)</span>
                 </div>
               ) : (
                 <TypingIndicator />
@@ -274,7 +353,7 @@ export function ChatPanel({
             </div>
             <div className="flex items-center justify-between mt-1.5 px-1">
               <p className="text-[10px] text-neutral-600">
-                Shift+Enter for new line · MAX generates 2D &amp; 3D browser games
+                {selectedModel === "max-pro" ? "8 credits/game" : "1 credit/game"} · Complex games may use up to 12 credits
               </p>
               {credits !== undefined && credits <= 3 && credits > 0 && (
                 <p className="text-[10px] text-secondary font-semibold">

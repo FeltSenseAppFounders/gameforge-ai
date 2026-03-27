@@ -10,6 +10,12 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
+const MAX_CONTINUATIONS = 2;
+const CREDITS_MAX = 8; // MAX PRO (Opus)
+const CREDITS_DEFAULT = 1; // MAX (Sonnet)
+const CREDITS_CONTINUATION = 1; // Per continuation (always Sonnet)
+const CREDITS_FINISH = 1; // Finish-or-fix fallback (always Sonnet)
+
 // Detect if user is requesting a 3D game
 function detect3D(messages: { role: string; content: string }[]): boolean {
   const lastMsg = messages[messages.length - 1]?.content?.toLowerCase() ?? "";
@@ -53,11 +59,28 @@ export async function POST(request: Request) {
       .single();
     if (!studio) return Response.json({ error: "No studio found" }, { status: 400 });
 
-    // Deduct credit
+    // Parse request
+    const { messages, genre, currentGameCode, gameProjectId, gameName, model } =
+      (await request.json()) as {
+        messages: { role: "user" | "assistant"; content: string }[];
+        genre?: string;
+        currentGameCode?: string;
+        gameProjectId?: string;
+        gameName?: string;
+        model?: "max" | "max-pro";
+      };
+    if (!messages?.length) {
+      return Response.json({ error: "Messages are required" }, { status: 400 });
+    }
+
+    const useOpus = model === "max-pro";
+    const creditCost = useOpus ? CREDITS_MAX : CREDITS_DEFAULT;
+
+    // Deduct credits atomically
     const serviceClient = createServiceClient();
     const { data: deducted, error: deductError } = await serviceClient.rpc(
       "deduct_credit",
-      { studio_id: studio.id }
+      { studio_id: studio.id, amount: creditCost }
     );
     if (deductError) {
       console.error("Credit deduction error:", deductError);
@@ -65,19 +88,6 @@ export async function POST(request: Request) {
     }
     if (!deducted) {
       return Response.json({ error: "insufficient_credits" }, { status: 402 });
-    }
-
-    // Parse request
-    const { messages, genre, currentGameCode, gameProjectId, gameName } =
-      (await request.json()) as {
-        messages: { role: "user" | "assistant"; content: string }[];
-        genre?: string;
-        currentGameCode?: string;
-        gameProjectId?: string;
-        gameName?: string;
-      };
-    if (!messages?.length) {
-      return Response.json({ error: "Messages are required" }, { status: 400 });
     }
 
     // Detect if user wants a 3D game
@@ -89,45 +99,167 @@ export async function POST(request: Request) {
       systemPrompt += `\n\n## CURRENT GAME CODE\nThe user has an existing game. Here is the current code:\n\n\`\`\`html\n${currentGameCode}\n\`\`\`\n\nModify this code based on the user's request. Generate the COMPLETE updated file.`;
     }
 
-    // Start Claude stream — runs server-side to completion via event callbacks
-    // Delta queue holds serialized SSE payloads (text deltas + status events)
+    // Delta queue for SSE streaming
     const deltas: Record<string, string>[] = [];
     let streamDone = false;
+    let accumulatedText = "";
 
-    const stream = anthropic.messages
-      .stream({
-        model: "claude-opus-4-6",
-        max_tokens: 20000,
-        thinking: { type: "enabled", budget_tokens: 10000 },
-        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      })
-      .on("streamEvent", (event) => {
-        if (event.type === "content_block_start") {
-          const type = event.content_block.type;
-          if (type === "thinking") {
-            deltas.push({ status: "thinking" });
-          } else if (type === "text") {
-            deltas.push({ status: "generating" });
+    // Async streaming loop with auto-continue
+    (async () => {
+      try {
+        let continuations = 0;
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+        let totalCreditsUsed = creditCost; // Initial deduction already happened
+
+        while (true) {
+          const isFirst = continuations === 0;
+
+          // Build messages — continuations append partial response + "continue" instruction
+          const streamMessages: { role: "user" | "assistant"; content: string }[] = isFirst
+            ? messages.map((m) => ({ role: m.role, content: m.content }))
+            : [
+                ...messages.map((m) => ({ role: m.role, content: m.content })),
+                { role: "assistant", content: accumulatedText },
+                { role: "user", content: "Continue exactly where you stopped. Output ONLY the remaining code — no repetition, no preamble, no explanation." },
+              ];
+
+          // First attempt: use selected model. Continuations: always Sonnet (cheaper).
+          const useThinking = isFirst && useOpus;
+          const stream = anthropic.messages.stream({
+            model: isFirst && useOpus ? "claude-opus-4-6" : "claude-sonnet-4-6",
+            max_tokens: useThinking ? 16000 : 16000,
+            ...(useThinking ? { thinking: { type: "enabled" as const, budget_tokens: 5000 } } : {}),
+            system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+            messages: streamMessages,
+          });
+
+          // Stream events into delta queue
+          for await (const event of stream) {
+            if (isFirst && event.type === "content_block_start") {
+              const blockType = event.content_block.type;
+              if (blockType === "thinking") {
+                deltas.push({ status: "thinking" });
+              } else if (blockType === "text") {
+                deltas.push({ status: "generating" });
+              }
+            }
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              accumulatedText += event.delta.text;
+              deltas.push({ text: event.delta.text });
+            }
+          }
+
+          // Collect token usage
+          const msg = await stream.finalMessage();
+          totalInputTokens += msg.usage.input_tokens;
+          totalOutputTokens += msg.usage.output_tokens;
+
+          // Check if continuation is needed
+          const needsContinuation =
+            msg.stop_reason === "max_tokens" &&
+            accumulatedText.includes("<!-- GAME_CODE_START -->") &&
+            !accumulatedText.includes("<!-- GAME_CODE_END -->") &&
+            continuations < MAX_CONTINUATIONS;
+
+          if (needsContinuation) {
+            // Server-side credit validation before continuing
+            const { data: canContinue } = await serviceClient.rpc("deduct_credit", {
+              studio_id: studio.id,
+              amount: CREDITS_CONTINUATION,
+            });
+            if (!canContinue) {
+              deltas.push({ status: "insufficient_credits_continue" });
+              break;
+            }
+            continuations++;
+            totalCreditsUsed += CREDITS_CONTINUATION;
+            deltas.push({ status: "continuing", creditsUsed: String(totalCreditsUsed) });
+            continue;
+          }
+          break;
+        }
+
+        // GUARANTEE: finish-or-fix fallback if game is still incomplete
+        const gameIncomplete =
+          accumulatedText.includes("<!-- GAME_CODE_START -->") &&
+          !accumulatedText.includes("<!-- GAME_CODE_END -->");
+
+        if (gameIncomplete) {
+          // Server-side credit validation before finish call
+          const { data: canFinish } = await serviceClient.rpc("deduct_credit", {
+            studio_id: studio.id,
+            amount: CREDITS_FINISH,
+          });
+          if (!canFinish) {
+            deltas.push({ status: "insufficient_credits_continue" });
+          } else {
+            totalCreditsUsed += CREDITS_FINISH;
+            deltas.push({ status: "finishing" });
+
+            const finishStream = anthropic.messages.stream({
+              model: "claude-sonnet-4-6",
+              max_tokens: 4000,
+              system: "You receive incomplete Phaser.js game HTML. Output ONLY the remaining code to make it runnable — close open functions, script tags, body, and html tags. Simplify remaining features if needed. Output raw code only — no markdown, no explanation.",
+              messages: [
+                { role: "user", content: `Here is the end of the incomplete game. Output ONLY what comes after the last line:\n\n${accumulatedText.slice(-3000)}` },
+              ],
+            });
+
+            for await (const event of finishStream) {
+              if (
+                event.type === "content_block_delta" &&
+                event.delta.type === "text_delta"
+              ) {
+                accumulatedText += event.delta.text;
+                deltas.push({ text: event.delta.text });
+              }
+            }
+
+            const finishMsg = await finishStream.finalMessage();
+            totalInputTokens += finishMsg.usage.input_tokens;
+            totalOutputTokens += finishMsg.usage.output_tokens;
+
+            // Force-close tags if still missing
+            if (!accumulatedText.includes("<!-- GAME_CODE_END -->")) {
+              const closing = "\n</script>\n</body>\n</html>\n<!-- GAME_CODE_END -->";
+              accumulatedText += closing;
+              deltas.push({ text: closing });
+            }
           }
         }
-      })
-      .on("text", (text) => {
-        deltas.push({ text });
-      })
-      .on("end", () => { streamDone = true; })
-      .on("error", () => { streamDone = true; });
+
+        // No text at all — push error
+        if (!accumulatedText.trim()) {
+          deltas.push({ error: "No response generated. Please try again." });
+        }
+
+        // Push token usage + credits summary as final delta
+        deltas.push({
+          usage: JSON.stringify({
+            input_tokens: totalInputTokens,
+            output_tokens: totalOutputTokens,
+            credits_used: totalCreditsUsed,
+          }),
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Stream error";
+        deltas.push({ error: message });
+      } finally {
+        streamDone = true;
+      }
+    })();
 
     // Persist game + chat after response closes
     after(async () => {
       try {
-        const msg = await stream.finalMessage();
-        const fullText = msg.content
-          .filter((b) => b.type === "text")
-          .map((b) => b.text)
-          .join("");
+        // Wait for streaming to finish
+        while (!streamDone) await new Promise((r) => setTimeout(r, 100));
 
-        const gameCode = extractGameCode(fullText);
+        const gameCode = extractGameCode(accumulatedText);
         if (!gameCode) return;
 
         let projectId = gameProjectId;
@@ -174,7 +306,7 @@ export async function POST(request: Request) {
                 })),
                 {
                   role: "assistant",
-                  content: fullText,
+                  content: accumulatedText,
                   timestamp: new Date().toISOString(),
                 },
               ],

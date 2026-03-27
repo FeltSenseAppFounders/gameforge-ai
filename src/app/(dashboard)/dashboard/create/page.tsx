@@ -24,13 +24,17 @@ function CreateGameContent() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
-  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | null>(null);
+  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null>(null);
+  const [selectedModel, setSelectedModel] = useState<"max" | "max-pro">("max");
   const [gameCode, setGameCode] = useState<string | null>(null);
   const [gameName, setGameName] = useState<string>("");
   const [gameProjectId, setGameProjectId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
-  const { balance: credits, refetch: refetchCredits, openPurchaseModal } = useCredits();
+  const [isAutoFixing, setIsAutoFixing] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
+  const [fixUsage, setFixUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
+  const { balance: credits, refetch: refetchCredits, openPurchaseModal, isPaidUser } = useCredits();
 
   // Ref to keep current gameCode accessible inside async callbacks
   const gameCodeRef = useRef<string | null>(null);
@@ -38,6 +42,8 @@ function CreateGameContent() {
   const hasAutoSwitched = useRef(false);
   // Ref to prevent double-loading template
   const templateLoaded = useRef(false);
+  // Ref to limit auto-fix to 1 attempt per generation
+  const autoFixAttempts = useRef(0);
 
   // Load template if ?template= param is present
   useEffect(() => {
@@ -79,6 +85,9 @@ function CreateGameContent() {
     setInput("");
     setIsStreaming(true);
     setStreamingText("");
+    setTokenUsage(null);
+    setFixUsage(null);
+    autoFixAttempts.current = 0;
 
     try {
       const res = await fetch("/api/chat", {
@@ -92,6 +101,7 @@ function CreateGameContent() {
           currentGameCode: gameCodeRef.current || undefined,
           gameProjectId: gameProjectId || undefined,
           gameName: gameName || undefined,
+          model: selectedModel,
         }),
       });
 
@@ -129,7 +139,19 @@ function CreateGameContent() {
               if (parsed.error) {
                 throw new Error(parsed.error);
               }
+              if (parsed.usage) {
+                setTokenUsage(JSON.parse(parsed.usage));
+              }
               if (parsed.status) {
+                if (parsed.status === "insufficient_credits_continue") {
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: "Game generation incomplete — not enough credits to continue. Purchase more credits to generate complex games.",
+                    },
+                  ]);
+                }
                 setStreamPhase(parsed.status);
               }
               if (parsed.text) {
@@ -196,7 +218,7 @@ function CreateGameContent() {
       setStreamPhase(null);
       refetchCredits();
     }
-  }, [input, messages, isStreaming, gameName, refetchCredits]);
+  }, [input, messages, isStreaming, gameName, refetchCredits, selectedModel]);
 
   const handleNewGame = useCallback(() => {
     setMessages([]);
@@ -204,11 +226,73 @@ function CreateGameContent() {
     setGameCode(null);
     gameCodeRef.current = null;
     hasAutoSwitched.current = false;
+    autoFixAttempts.current = 0;
     setGameName("");
     setGameProjectId(null);
     setStreamingText("");
+    setTokenUsage(null);
+    setFixUsage(null);
     setActiveTab("chat");
   }, []);
+
+  const handleGameError = useCallback(
+    async (error: { message: string; line: number; column: number }) => {
+      if (isAutoFixing || isStreaming || autoFixAttempts.current >= 1 || !gameCodeRef.current) return;
+      autoFixAttempts.current++;
+      setIsAutoFixing(true);
+      setStreamPhase("auto-fixing");
+
+      try {
+        const res = await fetch("/api/fix-game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameCode: gameCodeRef.current,
+            error: error.message,
+          }),
+        });
+
+        if (res.status === 402) {
+          openPurchaseModal();
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "Auto-fix needs 2 credits but you don't have enough. Purchase more credits to enable auto-fix.",
+            },
+          ]);
+          return;
+        }
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.fixedCode) {
+          setGameCode(data.fixedCode);
+          gameCodeRef.current = data.fixedCode;
+          setFixUsage({
+            input_tokens: data.usage.input_tokens,
+            output_tokens: data.usage.output_tokens,
+            credits_used: data.credits_used,
+          });
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `Auto-fixed an error: "${error.message}" (2 credits)`,
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Auto-fix error:", err);
+      } finally {
+        setIsAutoFixing(false);
+        setStreamPhase(null);
+        refetchCredits();
+      }
+    },
+    [isAutoFixing, isStreaming, openPurchaseModal, refetchCredits]
+  );
 
   const handleSave = useCallback(async () => {
     if (!gameCode) return;
@@ -351,6 +435,12 @@ function CreateGameContent() {
           onNewGame={handleNewGame}
           credits={credits}
           onBuyCredits={openPurchaseModal}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+          isPaidUser={isPaidUser}
+          tokenUsage={tokenUsage}
+          fixTokenUsage={fixUsage}
+          isAutoFixing={isAutoFixing}
         />
       </div>
 
@@ -369,6 +459,8 @@ function CreateGameContent() {
           gameName={gameName}
           gameProjectId={gameProjectId}
           isPublished={false}
+          onGameError={handleGameError}
+          isAutoFixing={isAutoFixing}
         />
       </div>
     </div>
