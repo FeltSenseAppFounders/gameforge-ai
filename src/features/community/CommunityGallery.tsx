@@ -18,28 +18,6 @@ const genreColors: Record<string, string> = {
   rpg: "bg-primary-light/10 text-primary-light border-primary-light/30",
 };
 
-// Mock comments pool for demo
-const MOCK_COMMENTS = [
-  { user: "NeonPlayer42", avatar: "N", text: "This is insanely fun! Can't stop playing." },
-  { user: "RetroGamer", avatar: "R", text: "Love the visuals. Great use of Phaser.js!" },
-  { user: "PixelQueen", avatar: "P", text: "Beat my high score of 340! Who can top it?" },
-  { user: "CodeWizard", avatar: "C", text: "How did you make the particle effects? Impressive." },
-  { user: "ArcadeKing", avatar: "A", text: "Reminds me of classic arcade games. Nostalgic!" },
-  { user: "GameDevSara", avatar: "G", text: "Clean code, smooth gameplay. Well done!" },
-  { user: "8BitFan", avatar: "8", text: "Added this to my favorites. More levels please!" },
-  { user: "MaxBuilder", avatar: "M", text: "Made something similar with MAX. Great inspiration!" },
-];
-
-function getMockComments(gameId: string) {
-  // Deterministic selection based on game ID
-  const hash = gameId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const comments = [];
-  for (let i = 0; i < 3; i++) {
-    comments.push(MOCK_COMMENTS[(hash + i * 3) % MOCK_COMMENTS.length]);
-  }
-  return comments;
-}
-
 interface CommunityGalleryProps {
   games: GameProject[];
   featured?: GameProject[];
@@ -58,11 +36,6 @@ export function CommunityGallery({
     () =>
       filter === "all" ? games : games.filter((g) => g.genre === filter),
     [games, filter],
-  );
-
-  const comments = useMemo(
-    () => (playingGame ? getMockComments(playingGame.id) : []),
-    [playingGame],
   );
 
   // Full-screen play modal
@@ -128,33 +101,10 @@ export function CommunityGallery({
               </h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {comments.map((comment, i) => (
-                <div key={i} className="flex gap-3">
-                  <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-neutral-300">
-                      {comment.avatar}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-300">
-                      {comment.user}
-                    </p>
-                    <p className="text-xs text-neutral-500 mt-0.5">
-                      {comment.text}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Disabled comment input */}
-            <div className="p-4 border-t border-neutral-700">
-              <div className="flex items-center gap-2 px-3 py-2 rounded bg-surface-dark border border-neutral-700 opacity-60">
-                <span className="text-xs text-neutral-500">
-                  Create a game to join the conversation
-                </span>
-              </div>
+            <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
+              <p className="text-xs text-neutral-600 text-center">
+                No comments yet
+              </p>
             </div>
           </div>
         </div>
