@@ -28,6 +28,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   const [selectedModel, setSelectedModel] = useState<"max" | "max-pro">("max");
   const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null>(null);
   const [isAutoFixing, setIsAutoFixing] = useState(false);
+  const [autoFixExhausted, setAutoFixExhausted] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
   const [fixUsage, setFixUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
   const { balance: credits, refetch: refetchCredits, openPurchaseModal, isPaidUser } =
@@ -40,6 +41,14 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   const hasAutoSwitched = useRef(!!game.game_code);
   const autoFixAttempts = useRef(0);
 
+  // Warn before closing tab while streaming
+  useEffect(() => {
+    if (!isStreaming) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isStreaming]);
+
   // Auto-switch to preview tab on mobile when game code first becomes available
   useEffect(() => {
     if (gameCode && !hasAutoSwitched.current) {
@@ -48,8 +57,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     }
   }, [gameCode]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+  const sendMessage = useCallback(async (overrideText?: string | unknown) => {
+    const text = (typeof overrideText === "string" ? overrideText : input).trim();
     if (!text || isStreaming) return;
 
     const userMessage: ChatMessage = { role: "user", content: text };
@@ -61,6 +70,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     setTokenUsage(null);
     setFixUsage(null);
     autoFixAttempts.current = 0;
+    setAutoFixExhausted(false);
 
     try {
       const res = await fetch("/api/chat", {
@@ -182,11 +192,22 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   }, []);
 
   const handleGameError = useCallback(
-    async (error: { message: string; line: number; column: number }) => {
-      if (isAutoFixing || isStreaming || autoFixAttempts.current >= 1 || !gameCodeRef.current) return;
+    async (errors: { message: string; line: number; column: number; stack: string }[]) => {
+      if (isAutoFixing || isStreaming || !gameCodeRef.current) return;
+      if (autoFixAttempts.current >= 2) {
+        setAutoFixExhausted(true);
+        return;
+      }
       autoFixAttempts.current++;
       setIsAutoFixing(true);
       setStreamPhase("auto-fixing");
+
+      const errorSummaries = errors.map((e) => {
+        let summary = e.message;
+        if (e.line > 0) summary += ` (line ${e.line}, col ${e.column})`;
+        if (e.stack) summary += `\nStack: ${e.stack}`;
+        return summary;
+      });
 
       try {
         const res = await fetch("/api/fix-game", {
@@ -194,7 +215,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             gameCode: gameCodeRef.current,
-            error: error.message,
+            errors: errorSummaries,
+            attemptNumber: autoFixAttempts.current,
           }),
         });
 
@@ -210,7 +232,10 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           return;
         }
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          setAutoFixExhausted(true);
+          return;
+        }
 
         const data = await res.json();
         if (data.fixedCode) {
@@ -221,16 +246,20 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
             output_tokens: data.usage.output_tokens,
             credits_used: data.credits_used,
           });
+          const errorList = errors.map((e) => e.message).join("; ");
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              content: `Auto-fixed an error: "${error.message}" (2 credits)`,
+              content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
             },
           ]);
+        } else {
+          setAutoFixExhausted(true);
         }
       } catch (err) {
         console.error("Auto-fix error:", err);
+        setAutoFixExhausted(true);
       } finally {
         setIsAutoFixing(false);
         setStreamPhase(null);
@@ -290,6 +319,12 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
       setIsSaving(false);
     }
   }, [gameCode, game.id, messages]);
+
+  const handleRetry = useCallback(() => {
+    autoFixAttempts.current = 0;
+    setAutoFixExhausted(false);
+    sendMessage("Please fix the errors in the game code and regenerate it");
+  }, [sendMessage]);
 
   const handlePublish = useCallback(async () => {
     await handleSave();
@@ -357,6 +392,8 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           tokenUsage={tokenUsage}
           fixTokenUsage={fixUsage}
           isAutoFixing={isAutoFixing}
+          autoFixExhausted={autoFixExhausted}
+          onRetry={handleRetry}
         />
       </div>
 

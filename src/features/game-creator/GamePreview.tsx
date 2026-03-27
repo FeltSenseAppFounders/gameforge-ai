@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useState, useMemo } from "react";
 import { ShareButton } from "@/features/community/ShareButton";
 import { injectGameHelpers } from "@/lib/inject-game-helpers";
+import { useRotatingMessage } from "@/hooks/useRotatingMessage";
 
 interface GamePreviewProps {
   gameCode: string | null;
@@ -13,7 +14,7 @@ interface GamePreviewProps {
   gameName?: string;
   gameProjectId?: string | null;
   isPublished?: boolean;
-  onGameError?: (error: { message: string; line: number; column: number }) => void;
+  onGameError?: (errors: { message: string; line: number; column: number; stack: string }[]) => void;
   isAutoFixing?: boolean;
 }
 
@@ -52,14 +53,28 @@ export function GamePreview({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [hasError, setHasError] = useState(false);
 
-  // Listen for error messages from the game iframe
+  const loadingMessages = useMemo(() => [
+    "Generating Phaser.js code...",
+    "Laying down the game world...",
+    "Spawning enemies with bad intentions...",
+    "Pixel art is hard, give MAX a moment...",
+    "Loading cheat codes... just kidding",
+    "Assembling the fun, one function at a time...",
+    "Asking the game engine nicely to cooperate...",
+    "Compiling awesomeness...",
+    "Tuning the difficulty to 'rage quit'...",
+    "MAX is in the zone. Don't disturb.",
+  ], []);
+  const loadingMsg = useRotatingMessage(loadingMessages, 3500, isLoading && !gameCode);
+
+  // Listen for error messages from the game iframe (batched format)
   useEffect(() => {
     if (!gameCode) { setHasError(false); return; }
     setHasError(false); // Reset on new game code
     function handler(e: MessageEvent) {
-      if (e.data?.type === "gf-game-error") {
+      if (e.data?.type === "gf-game-errors" && Array.isArray(e.data.errors)) {
         setHasError(true);
-        onGameError?.(e.data.error);
+        onGameError?.(e.data.errors);
       }
     }
     window.addEventListener("message", handler);
@@ -132,8 +147,8 @@ export function GamePreview({
             <h3 className="text-lg font-heading text-primary-light uppercase neon-text mb-2">
               MAX IS BUILDING YOUR GAME...
             </h3>
-            <p className="text-sm text-neutral-500">
-              Generating Phaser.js code
+            <p key={loadingMsg} className="text-sm font-semibold text-primary-light/80 neon-text animate-fade-in-up">
+              {loadingMsg}
             </p>
           </div>
         </div>

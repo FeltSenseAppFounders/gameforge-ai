@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
+import { useRotatingMessage } from "@/hooks/useRotatingMessage";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -24,6 +25,8 @@ interface ChatPanelProps {
   tokenUsage?: { input_tokens: number; output_tokens: number; credits_used: number } | null;
   fixTokenUsage?: { input_tokens: number; output_tokens: number; credits_used: number } | null;
   isAutoFixing?: boolean;
+  autoFixExhausted?: boolean;
+  onRetry?: () => void;
 }
 
 function MaxAvatar() {
@@ -92,10 +95,90 @@ export function ChatPanel({
   tokenUsage,
   fixTokenUsage,
   isAutoFixing,
+  autoFixExhausted,
+  onRetry,
 }: ChatPanelProps) {
   const outOfCredits = credits !== undefined && credits <= 0;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [proUpsellDismissed, setProUpsellDismissed] = useState(false);
+
+  const thinkingMessages = useMemo(() => [
+    "Planning the most epic game ever...",
+    "Consulting the game design gods...",
+    "Downloading creativity... 98%",
+    "Reading every game wiki simultaneously...",
+    "Channeling the spirit of Miyamoto...",
+  ], []);
+
+  const generatingMessages = useMemo(() => [
+    "Writing code at the speed of light...",
+    "Creating enemies is hard, give me a sec...",
+    "Ugh, this is taking a while. Be patient!",
+    "Teaching pixels to behave...",
+    "Spawning NPCs with attitude...",
+    "Making sure the physics don't break reality...",
+    "Adding the secret sauce...",
+    "Debugging before you even play... you're welcome",
+    "Placing collectibles in the most annoying spots...",
+    "Wiring up the controls... WASD or bust",
+    "Telling the boss enemy to chill... nope, it refused",
+    "Sprinkling particle effects everywhere...",
+    "Almost there... just kidding, still cooking",
+    "Convincing myself to write good code...",
+    "Stealing ideas from classic games... legally",
+    "Compiling fun.exe...",
+    "Rolling a D20 for code quality... got a 19!",
+  ], []);
+
+  const continuingMessages = useMemo(() => [
+    "This game is so big it needs a sequel...",
+    "Still going... this masterpiece takes time",
+    "Part 2 of your epic game loading...",
+    "My fingers hurt but I keep typing...",
+    "You asked for a LOT of features huh...",
+  ], []);
+
+  const finishingMessages = useMemo(() => [
+    "Polishing the final bits...",
+    "Adding one last explosion for good measure...",
+    "Wrapping it up with a bow...",
+    "Final boss: semicolons. I got this.",
+  ], []);
+
+  const buildingMessages = useMemo(() => [
+    "Building your game...",
+    "Creating enemies is hard, give me a sec...",
+    "Ugh, this is taking a while. Be patient!",
+    "Teaching pixels to behave...",
+    "Spawning NPCs with attitude...",
+    "Making sure the physics don't break reality...",
+    "Placing collectibles in the most annoying spots...",
+    "Telling the boss enemy to chill... nope, it refused",
+    "Sprinkling particle effects everywhere...",
+    "Almost there... just kidding, still cooking",
+    "Wiring up the controls... WASD or bust",
+    "Adding the secret sauce...",
+    "Compiling fun.exe...",
+    "Rolling a D20 for code quality... got a 19!",
+    "Stealing ideas from classic games... legally",
+    "Debugging before you even play... you're welcome",
+    "Hold tight, this game is gonna be fire...",
+    "Teaching enemies to actually be scary...",
+  ], []);
+
+  // Detect "code in progress" — start marker present, end marker not yet
+  const isBuildingCode = isStreaming && streamingText.includes("<!-- GAME_CODE_START -->") && !streamingText.includes("<!-- GAME_CODE_END -->");
+
+  const phaseMessages = streamPhase === "thinking" ? thinkingMessages
+    : streamPhase === "generating" ? generatingMessages
+    : streamPhase === "continuing" ? continuingMessages
+    : streamPhase === "finishing" ? finishingMessages
+    : generatingMessages;
+
+  const showPhaseRotating = isStreaming && !streamingText && streamPhase !== "auto-fixing";
+  const rotatingMsg = useRotatingMessage(phaseMessages, 3500, showPhaseRotating);
+  const buildingMsg = useRotatingMessage(buildingMessages, 3500, isBuildingCode);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -165,6 +248,14 @@ export function ChatPanel({
           + NEW GAME
         </button>
       </div>
+
+      {/* Streaming warning banner */}
+      {isStreaming && (
+        <div className="px-4 py-2 bg-secondary/10 border-b border-secondary/20 flex items-center gap-2">
+          <span className="text-sm">&#9888;&#65039;</span>
+          <span className="text-xs text-secondary">Don&apos;t close this window — MAX is still building. Your changes may be lost.</span>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -241,6 +332,33 @@ export function ChatPanel({
           </div>
         )}
 
+        {/* MAX PRO upsell after generation */}
+        {!isStreaming && !isAutoFixing && tokenUsage && messages.length > 0 && selectedModel === "max" && !proUpsellDismissed && (
+          <div className="ml-10 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5 flex items-start gap-2.5">
+            <span className="text-base mt-0.5">&#9889;</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                <span className="font-semibold text-primary-light">Want smarter games?</span>{" "}
+                MAX PRO uses deep thinking for complex mechanics, better AI, and fewer bugs.
+              </p>
+              <button
+                onClick={() => isPaidUser ? onModelChange("max-pro") : onBuyCredits?.()}
+                className="mt-1.5 text-[10px] font-bold text-primary-light hover:text-white uppercase tracking-wider transition-colors"
+              >
+                {isPaidUser ? "SWITCH TO MAX PRO →" : "GET MAX PRO →"}
+              </button>
+            </div>
+            <button
+              onClick={() => setProUpsellDismissed(true)}
+              className="text-neutral-600 hover:text-neutral-400 transition-colors shrink-0 p-0.5"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Auto-fixing indicator (outside streaming) */}
         {isAutoFixing && !isStreaming && (
           <div className="flex gap-3">
@@ -259,34 +377,39 @@ export function ChatPanel({
           <div className="flex gap-3">
             <MaxAvatar />
             <div className="bg-surface-light border border-primary/20 rounded-lg px-4 py-3 max-w-[85%]">
-              {streamingText ? (
+              {streamingText && isBuildingCode ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">🎮</span>
+                  <span key={buildingMsg} className="text-sm font-semibold text-primary-light neon-text animate-fade-in-up">{buildingMsg}</span>
+                </div>
+              ) : streamingText ? (
                 <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">
                   {stripGameCode(streamingText)}
                 </p>
               ) : streamPhase === "thinking" ? (
-                <div className="flex items-center gap-2 text-sm text-primary-light">
-                  <span className="animate-pulse">🧠</span>
-                  <span>MAX is thinking<span className="animate-pulse">...</span></span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">🧠</span>
+                  <span key={rotatingMsg} className="text-sm font-semibold text-primary-light neon-text animate-fade-in-up">{rotatingMsg}</span>
                 </div>
               ) : streamPhase === "generating" ? (
-                <div className="flex items-center gap-2 text-sm text-primary-light">
-                  <span className="animate-pulse">⚡</span>
-                  <span>MAX is writing code<span className="animate-pulse">...</span></span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">⚡</span>
+                  <span key={rotatingMsg} className="text-sm font-semibold text-primary-light neon-text animate-fade-in-up">{rotatingMsg}</span>
                 </div>
               ) : streamPhase === "continuing" ? (
-                <div className="flex items-center gap-2 text-sm text-secondary">
-                  <span className="animate-pulse">🔄</span>
-                  <span>MAX is continuing<span className="animate-pulse">...</span></span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">🔄</span>
+                  <span key={rotatingMsg} className="text-sm font-semibold text-secondary neon-text-yellow animate-fade-in-up">{rotatingMsg}</span>
                 </div>
               ) : streamPhase === "finishing" ? (
-                <div className="flex items-center gap-2 text-sm text-secondary">
-                  <span className="animate-pulse">🏁</span>
-                  <span>MAX is wrapping up<span className="animate-pulse">...</span></span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">🏁</span>
+                  <span key={rotatingMsg} className="text-sm font-semibold text-secondary neon-text-yellow animate-fade-in-up">{rotatingMsg}</span>
                 </div>
               ) : streamPhase === "auto-fixing" ? (
-                <div className="flex items-center gap-2 text-sm text-secondary">
-                  <span className="animate-pulse">🔧</span>
-                  <span>Fixing error<span className="animate-pulse">...</span> (2 credits)</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">🔧</span>
+                  <span className="text-sm font-semibold text-secondary neon-text-yellow">Fixing error... (2 credits)</span>
                 </div>
               ) : (
                 <TypingIndicator />
@@ -297,6 +420,22 @@ export function ChatPanel({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Auto-fix exhausted — retry banner */}
+      {autoFixExhausted && !isStreaming && !isAutoFixing && onRetry && (
+        <div className="px-4 py-3 bg-red-500/10 border-t border-red-500/20 flex items-center gap-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+          <p className="text-xs text-red-300 flex-1">
+            Something went wrong with the game code. Auto-fix couldn&apos;t resolve it.
+          </p>
+          <button
+            onClick={onRetry}
+            className="shrink-0 text-xs font-bold text-primary-light hover:text-white px-3 py-1.5 rounded border border-primary/40 hover:border-primary-light hover:bg-primary/10 transition-colors uppercase tracking-wider"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Input bar */}
       <div className="px-4 py-3 border-t border-neutral-700">

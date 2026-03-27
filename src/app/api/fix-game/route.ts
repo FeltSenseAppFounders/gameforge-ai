@@ -11,20 +11,53 @@ const anthropic = new Anthropic({
 
 const CREDITS_FIX = 2;
 
-const FIX_SYSTEM_PROMPT = `You are a JavaScript game debugger. You receive a broken Phaser.js or Three.js game as a single HTML file, plus the runtime error message.
+const FIX_SYSTEM_PROMPT = `You are an expert JavaScript game debugger specializing in Phaser.js 3 and Three.js browser games. You receive a broken game as a single HTML file, plus one or more runtime error messages with line numbers and stack traces.
 
 Your job:
-1. Find the bug causing the error
-2. Fix it
+1. Analyze ALL error messages together — they often share a single root cause
+2. Find and fix the root cause (not just symptoms)
 3. Return the COMPLETE corrected HTML file
 
-Rules:
+## COMMON LLM CODE GENERATION BUGS (check these first)
+
+### Template Literal Issues
+- NESTED BACKTICKS: Template literals inside template literals cause "Unexpected template string" errors. Fix by using string concatenation for the inner expression, or assign the inner template to a variable first.
+  BAD:  \\\`outer \\\${obj.map(x => \\\`inner \\\${x}\\\`).join(',')}\\\`
+  GOOD: \\\`outer \\\${obj.map(x => 'inner ' + x).join(',')}\\\`
+- DOLLAR-BRACE with objects: \\\`\\\${someObject}\\\` produces "[object Object]". Access specific properties instead.
+
+### Bracket/Brace/Parenthesis Mismatches
+- Count opening and closing braces for every function, class, if/else, for/while block
+- A single missing "}" at the end of a function causes cascading "Unexpected token" errors
+- Pay special attention to nested callbacks, .forEach/.map/.filter chains, and event handlers
+
+### Class & Function Hoisting
+- JavaScript classes are NOT hoisted. If a class is used before its definition, move the class definition above the usage.
+- Phaser scene classes MUST be defined before the new Phaser.Game({ scene: [MyScene] }) config
+- Arrow functions and class methods are NOT hoisted either
+
+### Scope & Reference Errors
+- Variables declared with let/const inside a block are not accessible outside
+- "this" inside arrow functions refers to the enclosing scope, not the class instance — use regular functions for Phaser callbacks
+
+### Common Phaser.js Pitfalls
+- this.physics.add.collider() requires both objects to be physics-enabled
+- this.add.particles() API changed in Phaser 3.60+ — use this.add.particles(x, y, key, config)
+- Texture keys must be created before any sprite references them
+
+### Common Three.js Pitfalls
+- renderer.domElement must be appended to document.body before use
+- Materials require lights in the scene to be visible (except MeshBasicMaterial)
+- requestAnimationFrame loop must call renderer.render(scene, camera)
+
+## RULES
 - Output ONLY the fixed HTML — no markdown fences, no explanation, no preamble
 - Wrap the game code in <!-- GAME_CODE_START --> and <!-- GAME_CODE_END --> markers
-- Preserve ALL game functionality — do not remove features
-- Define ALL classes and functions BEFORE referencing them (JavaScript classes are NOT hoisted)
-- If the error is a syntax error, carefully check brackets, parentheses, and semicolons
-- If a variable/class is used before declaration, move the declaration above the usage`;
+- Preserve ALL game functionality — do not remove features, do not simplify the game
+- If this is attempt 2 (retry), the previous fix did not work. Try a DIFFERENT approach:
+  - Re-read the errors carefully — the root cause may not be what you assumed
+  - Consider rewriting the problematic section from scratch rather than patching
+  - Check for MULTIPLE bugs, not just one`;
 
 export async function POST(request: Request) {
   try {
@@ -44,14 +77,23 @@ export async function POST(request: Request) {
     if (!studio)
       return Response.json({ error: "No studio found" }, { status: 400 });
 
-    // Parse request
-    const { gameCode, error: gameError } = (await request.json()) as {
+    // Parse request (supports both new array format and legacy single error)
+    const body = (await request.json()) as {
       gameCode: string;
-      error: string;
+      errors?: string[];
+      error?: string;
+      attemptNumber?: number;
     };
-    if (!gameCode || !gameError) {
+    const { gameCode, attemptNumber = 1 } = body;
+    const errorMessages: string[] = body.errors
+      ? body.errors
+      : body.error
+        ? [body.error]
+        : [];
+
+    if (!gameCode || errorMessages.length === 0) {
       return Response.json(
-        { error: "gameCode and error are required" },
+        { error: "gameCode and at least one error are required" },
         { status: 400 }
       );
     }
@@ -84,7 +126,15 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "user",
-          content: `Runtime error:\n${gameError}\n\nBroken game code:\n${gameCode}`,
+          content: [
+            `Fix attempt: ${attemptNumber} of 2`,
+            ``,
+            `=== RUNTIME ERRORS (${errorMessages.length}) ===`,
+            ...errorMessages.map((e, i) => `Error ${i + 1}:\n${e}`),
+            ``,
+            `=== BROKEN GAME CODE ===`,
+            gameCode,
+          ].join("\n"),
         },
       ],
     });

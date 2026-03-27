@@ -99,10 +99,41 @@ export async function POST(request: Request) {
       systemPrompt += `\n\n## CURRENT GAME CODE\nThe user has an existing game. Here is the current code:\n\n\`\`\`html\n${currentGameCode}\n\`\`\`\n\nModify this code based on the user's request. Generate the COMPLETE updated file.`;
     }
 
+    // Eagerly create game project if none exists, so client gets the ID
+    let resolvedProjectId = gameProjectId || null;
+    if (!resolvedProjectId) {
+      const name =
+        gameName ||
+        (messages[0]?.content.length > 40
+          ? messages[0].content.slice(0, 40) + "..."
+          : messages[0]?.content) ||
+        "Untitled Game";
+
+      const { data } = await serviceClient
+        .from("game_projects")
+        .insert({
+          studio_id: studio.id,
+          name,
+          description: messages[0]?.content || null,
+          status: "playable",
+          game_code: null,
+          is_public: false,
+        })
+        .select("id")
+        .single();
+
+      resolvedProjectId = data?.id ?? null;
+    }
+
     // Delta queue for SSE streaming
     const deltas: Record<string, string>[] = [];
     let streamDone = false;
     let accumulatedText = "";
+
+    // Send project ID to client so it can sync state
+    if (resolvedProjectId && !gameProjectId) {
+      deltas.push({ projectId: resolvedProjectId });
+    }
 
     // Async streaming loop with auto-continue
     (async () => {
@@ -260,61 +291,34 @@ export async function POST(request: Request) {
         while (!streamDone) await new Promise((r) => setTimeout(r, 100));
 
         const gameCode = extractGameCode(accumulatedText);
-        if (!gameCode) return;
+        if (!gameCode || !resolvedProjectId) return;
 
-        let projectId = gameProjectId;
+        // Update the project with the generated game code
+        await serviceClient
+          .from("game_projects")
+          .update({ game_code: gameCode, updated_at: new Date().toISOString() })
+          .eq("id", resolvedProjectId);
 
-        if (projectId) {
-          await serviceClient
-            .from("game_projects")
-            .update({ game_code: gameCode, updated_at: new Date().toISOString() })
-            .eq("id", projectId);
-        } else {
-          const name =
-            gameName ||
-            (messages[0]?.content.length > 40
-              ? messages[0].content.slice(0, 40) + "..."
-              : messages[0]?.content) ||
-            "Untitled Game";
-
-          const { data } = await serviceClient
-            .from("game_projects")
-            .insert({
-              studio_id: studio.id,
-              name,
-              description: messages[0]?.content || null,
-              status: "playable",
-              game_code: gameCode,
-              is_public: false,
-            })
-            .select("id")
-            .single();
-
-          projectId = data?.id;
-        }
-
-        if (projectId) {
-          await serviceClient.from("chat_sessions").upsert(
-            {
-              studio_id: studio.id,
-              game_project_id: projectId,
-              messages: [
-                ...messages.map((m) => ({
-                  role: m.role,
-                  content: m.content,
-                  timestamp: new Date().toISOString(),
-                })),
-                {
-                  role: "assistant",
-                  content: accumulatedText,
-                  timestamp: new Date().toISOString(),
-                },
-              ],
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "game_project_id" }
-          );
-        }
+        await serviceClient.from("chat_sessions").upsert(
+          {
+            studio_id: studio.id,
+            game_project_id: resolvedProjectId,
+            messages: [
+              ...messages.map((m) => ({
+                role: m.role,
+                content: m.content,
+                timestamp: new Date().toISOString(),
+              })),
+              {
+                role: "assistant",
+                content: accumulatedText,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "game_project_id" }
+        );
       } catch (err) {
         console.error("Background save failed:", err);
       }

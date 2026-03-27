@@ -5,20 +5,61 @@ import { GAMEFORGE_CORE_JS } from "./gameforge-core";
 
 // Error handler — catches JS errors in the iframe and sends them to parent via postMessage.
 // Must be injected BEFORE all other scripts so it catches early errors.
+// Uses 3 detection layers: window.onerror, capture-phase error listener, health-check fallback.
+// Debounces errors for 600ms to collect cascading syntax errors before sending.
 const ERROR_HANDLER_BLOCK = `
 <script>
 (function(){
-  var errors=[];
+  var collected=[];
+  var timer=null;
+  var sent=false;
+  var MAX_ERRORS=5;
+  var DEBOUNCE_MS=600;
+
+  function flush(){
+    if(sent||!collected.length)return;
+    sent=true;
+    if(timer){clearTimeout(timer);timer=null;}
+    try{
+      window.parent.postMessage({type:'gf-game-errors',errors:collected.slice()},'*');
+      window.parent.postMessage({type:'gf-game-error',error:collected[0]},'*');
+    }catch(e){}
+  }
+
+  function pushError(msg,line,col,stack){
+    if(collected.length>=MAX_ERRORS)return;
+    collected.push({message:String(msg),line:line||0,column:col||0,stack:stack||''});
+    if(!timer&&!sent){timer=setTimeout(flush,DEBOUNCE_MS);}
+    if(collected.length>=MAX_ERRORS)flush();
+  }
+
+  // Layer 1: Legacy window.onerror
   window.onerror=function(msg,source,line,col,error){
-    if(errors.length>=3)return false;
-    errors.push(1);
-    try{window.parent.postMessage({type:'gf-game-error',error:{message:String(msg),line:line||0,column:col||0,stack:error&&error.stack||''}},'*');}catch(e){}
+    pushError(msg,line,col,error&&error.stack||'');
     return false;
   };
+
+  // Layer 2: Capture-phase error listener — catches SyntaxErrors that window.onerror misses
+  window.addEventListener('error',function(event){
+    if(event instanceof ErrorEvent){
+      pushError(event.message,event.lineno||0,event.colno||0,event.error&&event.error.stack||'');
+    }
+  },true);
+
+  // Layer 3: Unhandled promise rejections
   window.addEventListener('unhandledrejection',function(e){
-    if(errors.length>=3)return;
-    errors.push(1);
-    try{window.parent.postMessage({type:'gf-game-error',error:{message:'Unhandled: '+String(e.reason),line:0,column:0,stack:''}},'*');}catch(ex){}
+    pushError('Unhandled: '+String(e.reason),0,0,'');
+  });
+
+  // Layer 4: Health-check fallback — if game script fails to parse entirely,
+  // window.__gf_ok (set by a script AFTER game code) will never be true.
+  window.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      if(!window.__gf_ok&&!sent&&collected.length===0){
+        pushError('Game script failed to load — likely a syntax error in the generated code',0,0,'');
+        flush();
+      }
+    },1500);
   });
 })();
 </script>
@@ -228,10 +269,15 @@ canvas { position: relative; z-index: 1; }
 </script>
 `;
 
+// Health-check script — injected AFTER the game code (before </body>).
+// If the game script has a syntax error, it fails to parse entirely and this flag
+// is never set. The error handler's DOMContentLoaded timeout detects this.
+const HEALTH_CHECK_BLOCK = `<script>window.__gf_ok=true;</script>`;
+
 /**
  * Injects the GF helper library and virtual touch controls into game HTML.
  * - GF library: injected before </head> (available to game scripts)
- * - Touch controls: injected before </body> (D-pad + action button)
+ * - Health check + touch controls: injected before </body> (after game code)
  */
 export function injectGameHelpers(html: string): string {
   // 1. Inject error handler + GF core library before </head>
@@ -244,12 +290,13 @@ export function injectGameHelpers(html: string): string {
     html = headScripts + html;
   }
 
-  // 2. Inject touch controls before </body>
+  // 2. Inject health check + touch controls before </body>
+  const bodyInsert = HEALTH_CHECK_BLOCK + TOUCH_CONTROLS_BLOCK;
   const bodyCloseIdx = html.lastIndexOf("</body>");
   if (bodyCloseIdx !== -1) {
-    html = html.slice(0, bodyCloseIdx) + TOUCH_CONTROLS_BLOCK + html.slice(bodyCloseIdx);
+    html = html.slice(0, bodyCloseIdx) + bodyInsert + html.slice(bodyCloseIdx);
   } else {
-    html = html + TOUCH_CONTROLS_BLOCK;
+    html = html + bodyInsert;
   }
 
   return html;
