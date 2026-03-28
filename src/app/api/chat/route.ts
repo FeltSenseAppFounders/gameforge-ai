@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { after } from "next/server";
 import { buildSystemPrompt, extractGameCode } from "@/lib/prompts/game-creator";
+import { SAFETY_FILTER_PROMPT } from "@/lib/prompts/safety-filter";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { rateLimit } from "@/lib/rate-limit";
@@ -110,6 +111,36 @@ export async function POST(request: Request) {
     }
     if (currentGameCode && currentGameCode.length > MAX_GAME_CODE_LENGTH) {
       return Response.json({ error: "Game code too large" }, { status: 400 });
+    }
+
+    // Safety filter — screen user prompt with Haiku before spending credits
+    const lastUserMessage = messages.filter((m) => m.role === "user").pop()?.content ?? "";
+    if (lastUserMessage) {
+      try {
+        const filterResponse = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 100,
+          system: SAFETY_FILTER_PROMPT,
+          messages: [{ role: "user", content: lastUserMessage }],
+        });
+        const filterText =
+          filterResponse.content[0]?.type === "text" ? filterResponse.content[0].text : "";
+        const verdict = JSON.parse(filterText);
+        if (!verdict.allow) {
+          return Response.json(
+            {
+              error: "prompt_rejected",
+              reason:
+                verdict.reason ||
+                "This request was flagged as potentially unsafe. Try describing the game mechanic you want instead.",
+            },
+            { status: 400 }
+          );
+        }
+      } catch {
+        // Fail-open: if Haiku errors or returns invalid JSON, allow the request.
+        // Prompt hardening + CSP still protect downstream.
+      }
     }
 
     // Resolve game code: prefer DB (when gameProjectId exists), fallback to client payload

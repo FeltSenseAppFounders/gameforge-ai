@@ -51,6 +51,12 @@ Your job:
 - Materials require lights in the scene to be visible (except MeshBasicMaterial)
 - requestAnimationFrame loop must call renderer.render(scene, camera)
 
+## SECURITY RULES (MANDATORY — never violate)
+- NEVER add fetch(), XMLHttpRequest, WebSocket, eval(), new Function(), or any network/dynamic-execution APIs
+- NEVER add WebAssembly, Web Workers, or access device APIs (clipboard, geolocation, etc.)
+- NEVER load external resources beyond the existing Phaser/Three.js CDN scripts
+- If the broken code contains any of these, REMOVE them as part of the fix
+
 ## RULES
 - Output ONLY the fixed HTML — no markdown fences, no explanation, no preamble
 - Wrap the game code in <!-- GAME_CODE_START --> and <!-- GAME_CODE_END --> markers

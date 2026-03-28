@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 const REASONS = [
   "Inappropriate content",
   "Offensive language",
+  "Malicious code",
   "Phishing / scam",
   "Copyright violation",
 ] as const;

@@ -124,6 +124,22 @@ function CreateGameContent() {
         return;
       }
 
+      // Safety filter rejected the prompt
+      if (res.status === 400) {
+        const body = await res.json().catch(() => null);
+        if (body?.error === "prompt_rejected") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `I can't help with that request. ${body.reason || "Try describing the game mechanic you want instead."}`,
+            },
+          ]);
+          setIsStreaming(false);
+          return;
+        }
+      }
+
       if (!res.ok) {
         throw new Error(`API error: ${res.status}`);
       }

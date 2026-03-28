@@ -33,24 +33,35 @@ const ERROR_HANDLER_BLOCK = `
 (function(){
   var collected=[];
   var timer=null;
-  var sent=false;
+  var lastSent=0;
   var MAX_ERRORS=5;
   var DEBOUNCE_MS=600;
+  var COOLDOWN_MS=3000;
 
   function flush(){
-    if(sent||!collected.length)return;
-    sent=true;
+    var now=Date.now();
+    if(!collected.length||(now-lastSent)<COOLDOWN_MS){
+      console.warn('[GF-HEAL] flush skipped: collected='+collected.length+' cooldown='+(now-lastSent)+'ms');
+      return;
+    }
+    lastSent=now;
     if(timer){clearTimeout(timer);timer=null;}
+    console.warn('[GF-HEAL] flush sending '+collected.length+' errors via postMessage');
     try{
       window.parent.postMessage({type:'gf-game-errors',errors:collected.slice()},'*');
       window.parent.postMessage({type:'gf-game-error',error:collected[0]},'*');
-    }catch(e){}
+      console.warn('[GF-HEAL] postMessage sent OK');
+    }catch(e){
+      console.warn('[GF-HEAL] postMessage FAILED:',e);
+    }
+    collected=[];
   }
 
   function pushError(msg,line,col,stack){
     if(collected.length>=MAX_ERRORS)return;
     collected.push({message:String(msg).slice(0,500),line:line||0,column:col||0,stack:String(stack||'').slice(0,1000)});
-    if(!timer&&!sent){timer=setTimeout(flush,DEBOUNCE_MS);}
+    console.warn('[GF-HEAL] pushError #'+collected.length+':',String(msg).slice(0,120));
+    if(!timer){timer=setTimeout(flush,DEBOUNCE_MS);}
     if(collected.length>=MAX_ERRORS)flush();
   }
 
@@ -76,7 +87,7 @@ const ERROR_HANDLER_BLOCK = `
   // window.__gf_ok (set by a script AFTER game code) will never be true.
   window.addEventListener('DOMContentLoaded',function(){
     setTimeout(function(){
-      if(!window.__gf_ok&&!sent&&collected.length===0){
+      if(!window.__gf_ok&&!lastSent&&collected.length===0){
         pushError('Game script failed to load — likely a syntax error in the generated code',0,0,'');
         flush();
       }

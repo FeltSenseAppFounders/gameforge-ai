@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
+import { scanGameCode } from "@/lib/game-scanner";
 import { createClient } from "@/lib/supabase/client";
 import { useCredits } from "@/features/credits/CreditsProvider";
 import type { ChatMessage } from "@/features/game-creator/ChatPanel";
@@ -40,7 +41,9 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   const gameCodeRef = useRef<string | null>(game.game_code || null);
   const hasAutoSwitched = useRef(!!game.game_code);
   const autoFixAttempts = useRef(0);
+  const isStreamingRef = useRef(false);
   const pendingGameErrors = useRef<{ message: string; line: number; column: number; stack: string }[] | null>(null);
+  isStreamingRef.current = isStreaming;
 
   // Warn before closing tab while streaming
   useEffect(() => {
@@ -118,6 +121,22 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
         ]);
         setIsStreaming(false);
         return;
+      }
+
+      // Safety filter rejected the prompt
+      if (res.status === 400) {
+        const body = await res.json().catch(() => null);
+        if (body?.error === "prompt_rejected") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `I can't help with that request. ${body.reason || "Try describing the game mechanic you want instead."}`,
+            },
+          ]);
+          setIsStreaming(false);
+          return;
+        }
       }
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -218,19 +237,24 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
 
   const handleGameError = useCallback(
     async (errors: { message: string; line: number; column: number; stack: string }[]) => {
-      if (isAutoFixing || !gameCodeRef.current) return;
-      // Queue errors during streaming — the iframe's error handler is one-shot
-      // (sent=true after first flush), so if we ignore these, they're lost forever.
-      // Process queued errors after streaming ends via the useEffect below.
-      if (isStreaming) {
+      console.warn("[GF-HEAL] handleGameError called:", errors.length, "errors | isAutoFixing:", isAutoFixing, "| gameCode:", !!gameCodeRef.current, "| streaming:", isStreamingRef.current, "| attempts:", autoFixAttempts.current);
+      if (isAutoFixing || !gameCodeRef.current) {
+        console.warn("[GF-HEAL] BLOCKED: isAutoFixing=", isAutoFixing, "gameCode=", !!gameCodeRef.current);
+        return;
+      }
+      // Queue errors during streaming — process after streaming ends via useEffect below.
+      if (isStreamingRef.current) {
+        console.warn("[GF-HEAL] QUEUED: streaming active, will replay after stream ends");
         pendingGameErrors.current = errors;
         return;
       }
       if (autoFixAttempts.current >= 2) {
+        console.warn("[GF-HEAL] EXHAUSTED: 2 attempts used");
         setAutoFixExhausted(true);
         return;
       }
       autoFixAttempts.current++;
+      console.warn("[GF-HEAL] PROCEEDING with auto-fix attempt", autoFixAttempts.current);
       setIsAutoFixing(true);
       setStreamPhase("auto-fixing");
 
@@ -321,7 +345,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
         refetchCredits();
       }
     },
-    [isAutoFixing, isStreaming, openPurchaseModal, refetchCredits]
+    [isAutoFixing, openPurchaseModal, refetchCredits]
   );
 
   // Process queued game errors after streaming ends.
@@ -393,6 +417,21 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   }, [sendMessage]);
 
   const handlePublish = useCallback(async () => {
+    // Scan game code for dangerous patterns before publishing
+    if (gameCode) {
+      const scanResult = scanGameCode(gameCode);
+      if (!scanResult.safe) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `Cannot publish — the game code contains disallowed patterns:\n\n${scanResult.violations.map((v) => `• ${v}`).join("\n")}\n\nPlease ask me to regenerate the game without these patterns.`,
+          },
+        ]);
+        return;
+      }
+    }
+
     await handleSave();
     try {
       const supabase = createClient();
@@ -407,7 +446,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     } catch (err) {
       console.error("Publish error:", err);
     }
-  }, [handleSave, game.id]);
+  }, [handleSave, game.id, gameCode]);
 
   return (
     <div className="-m-4 sm:-m-6 flex flex-col lg:flex-row h-[calc(100dvh-4rem)] overflow-hidden">

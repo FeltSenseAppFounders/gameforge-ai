@@ -52,6 +52,8 @@ export function GamePreview({
 }: GamePreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [hasError, setHasError] = useState(false);
+  const onGameErrorRef = useRef(onGameError);
+  onGameErrorRef.current = onGameError;
 
   const loadingMessages = useMemo(() => [
     "Generating Phaser.js code...",
@@ -67,21 +69,25 @@ export function GamePreview({
   ], []);
   const loadingMsg = useRotatingMessage(loadingMessages, 3500, isLoading && !gameCode);
 
-  // Listen for error messages from the game iframe (batched format)
+  // Permanent message listener — set up once on mount, never torn down.
+  // This avoids listener churn during streaming (when gameCode changes every chunk).
   useEffect(() => {
-    if (!gameCode) { setHasError(false); return; }
-    setHasError(false); // Reset on new game code
     function handler(e: MessageEvent) {
-      // Only accept messages from sandboxed srcdoc iframes (origin is "null" string)
-      if (e.origin !== "null") return;
+      // Only process GameForge error messages (type check is sufficient validation)
       if (e.data?.type === "gf-game-errors" && Array.isArray(e.data.errors)) {
+        console.warn("[GF-HEAL] Parent received", e.data.errors.length, "errors from iframe, origin:", e.origin);
         setHasError(true);
-        onGameError?.(e.data.errors);
+        onGameErrorRef.current?.(e.data.errors);
       }
     }
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [onGameError, gameCode]);
+  }, []);
+
+  // Reset error indicator when new game code loads
+  useEffect(() => {
+    if (gameCode) setHasError(false);
+  }, [gameCode]);
 
   const handleRestart = useCallback(() => {
     const iframe = iframeRef.current;
