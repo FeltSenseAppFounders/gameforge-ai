@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CreditsPurchaseModal } from "./CreditsPurchaseModal";
+import { ProUpsellDialog } from "./ProUpsellDialog";
 
 interface CreditsContextValue {
   balance: number;
@@ -17,6 +18,8 @@ interface CreditsContextValue {
   isPaidUser: boolean;
   refetch: () => Promise<void>;
   openPurchaseModal: () => void;
+  openPurchaseModalForPack: (packId: string) => void;
+  showProUpsell: () => void;
 }
 
 const CreditsContext = createContext<CreditsContextValue>({
@@ -26,6 +29,8 @@ const CreditsContext = createContext<CreditsContextValue>({
   isPaidUser: false,
   refetch: async () => {},
   openPurchaseModal: () => {},
+  openPurchaseModalForPack: () => {},
+  showProUpsell: () => {},
 });
 
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
@@ -33,6 +38,8 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPaidUser, setIsPaidUser] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [preselectedPack, setPreselectedPack] = useState<string | null>(null);
+  const [proUpsellOpen, setProUpsellOpen] = useState(false);
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -90,12 +97,25 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
         isPaidUser,
         refetch: fetchBalance,
         openPurchaseModal: () => setShowModal(true),
+        openPurchaseModalForPack: (packId: string) => {
+          setPreselectedPack(packId);
+          setShowModal(true);
+        },
+        showProUpsell: () => setProUpsellOpen(true),
       }}
     >
       {children}
       <CreditsPurchaseModal
         open={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          setPreselectedPack(null);
+        }}
+        initialPackId={preselectedPack}
+      />
+      <ProUpsellDialog
+        forceOpen={proUpsellOpen}
+        onForceClose={() => setProUpsellOpen(false)}
       />
     </CreditsContext.Provider>
   );

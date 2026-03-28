@@ -213,6 +213,49 @@
   border-radius: 8px !important;
 }
 
+/* ── Pro Upsell Animations ── */
+
+@keyframes scan-lines {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 4px; }
+}
+
+@keyframes flicker-in {
+  0% { opacity: 0; }
+  10% { opacity: 0.8; }
+  15% { opacity: 0.2; }
+  20% { opacity: 0.9; }
+  30% { opacity: 0.4; }
+  40% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes slide-up-stagger {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .animate-scan-lines {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(124, 252, 0, 0.03) 2px,
+      rgba(124, 252, 0, 0.03) 4px
+    );
+    animation: scan-lines 0.2s linear infinite;
+  }
+
+  .animate-flicker-in {
+    animation: flicker-in 0.6s ease-out both;
+  }
+
+  .animate-slide-up {
+    animation: slide-up-stagger 0.5s ease-out both;
+  }
+}
+
 /* ── Animations ── */
 
 @keyframes fade-in-up {

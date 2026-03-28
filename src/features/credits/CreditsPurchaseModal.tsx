@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   EmbeddedCheckout,
   EmbeddedCheckoutProvider,
@@ -17,14 +17,22 @@ const stripePromise = loadStripe(
 interface CreditsPurchaseModalProps {
   open: boolean;
   onClose: () => void;
+  initialPackId?: string | null;
 }
 
 export function CreditsPurchaseModal({
   open,
   onClose,
+  initialPackId,
 }: CreditsPurchaseModalProps) {
   const [selectedPack, setSelectedPack] = useState<string | null>(null);
   const { refetch } = useCredits();
+
+  useEffect(() => {
+    if (initialPackId && open) {
+      setSelectedPack(initialPackId);
+    }
+  }, [initialPackId, open]);
 
   const fetchClientSecret = useCallback(async () => {
     if (!selectedPack) throw new Error("No pack selected");

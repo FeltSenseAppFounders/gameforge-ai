@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useMemo, useState } from "react";
 import { useRotatingMessage } from "@/hooks/useRotatingMessage";
+import { useCredits } from "@/features/credits/CreditsProvider";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -98,6 +99,7 @@ export function ChatPanel({
   autoFixExhausted,
   onRetry,
 }: ChatPanelProps) {
+  const { showProUpsell } = useCredits();
   const outOfCredits = credits !== undefined && credits <= 0;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -227,17 +229,17 @@ export function ChatPanel({
               MAX
             </button>
             <button
-              onClick={() => isPaidUser ? onModelChange("max-pro") : onBuyCredits?.()}
+              onClick={() => isPaidUser ? onModelChange("max-pro") : showProUpsell()}
               className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors ${
                 selectedModel === "max-pro"
                   ? "bg-secondary/20 text-secondary"
                   : isPaidUser
                     ? "text-neutral-500 hover:text-neutral-300"
-                    : "text-neutral-600 cursor-not-allowed"
+                    : "text-secondary/70 hover:text-secondary border border-secondary/30 animate-pulse-neon"
               }`}
-              title={isPaidUser ? "8 credits per game" : "Purchase credits to unlock"}
+              title={isPaidUser ? "8 credits per game" : "Upgrade to PRO"}
             >
-              PRO {!isPaidUser && "🔒"}
+              PRO {!isPaidUser && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="inline-block ml-0.5 -mt-0.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
             </button>
           </div>
         </div>
@@ -342,7 +344,7 @@ export function ChatPanel({
                 MAX PRO uses deep thinking for complex mechanics, better AI, and fewer bugs.
               </p>
               <button
-                onClick={() => isPaidUser ? onModelChange("max-pro") : onBuyCredits?.()}
+                onClick={() => isPaidUser ? onModelChange("max-pro") : showProUpsell()}
                 className="mt-1.5 text-[10px] font-bold text-primary-light hover:text-white uppercase tracking-wider transition-colors"
               >
                 {isPaidUser ? "SWITCH TO MAX PRO →" : "GET MAX PRO →"}
