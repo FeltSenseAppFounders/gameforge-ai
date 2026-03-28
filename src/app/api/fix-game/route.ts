@@ -197,8 +197,32 @@ export async function POST(request: Request) {
       model: "claude-sonnet-4-6",
     });
 
-    // Call Sonnet to fix the game
-    const response = await anthropic.messages.create({
+    // SSE streaming — delta queue pattern (matches /api/chat)
+    const deltas: Record<string, string>[] = [];
+    let streamDone = false;
+
+    function deltaQueueToSSE() {
+      let cursor = 0;
+      const encoder = new TextEncoder();
+      return new ReadableStream({
+        async pull(controller) {
+          while (cursor >= deltas.length && !streamDone) {
+            await new Promise((r) => setTimeout(r, 15));
+          }
+          while (cursor < deltas.length) {
+            const data = JSON.stringify(deltas[cursor++]);
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          }
+          if (streamDone && cursor >= deltas.length) {
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          }
+        },
+      });
+    }
+
+    // Start streaming Claude fix
+    const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-6",
       max_tokens: 16000,
       system: FIX_SYSTEM_PROMPT,
@@ -218,25 +242,55 @@ export async function POST(request: Request) {
       ],
     });
 
-    const responseText =
-      response.content[0].type === "text" ? response.content[0].text : "";
-    const fixedCode = extractGameCode(responseText) || extractGameCode(responseText, false);
+    deltas.push({ status: "fixing" });
 
-    // Persist fixed code to DB so subsequent attempts load the latest fix
-    if (fixedCode && body.gameProjectId) {
-      await serviceClient
-        .from("game_projects")
-        .update({ game_code: fixedCode, updated_at: new Date().toISOString() })
-        .eq("id", body.gameProjectId);
-    }
+    // Process stream in background, push deltas as they arrive
+    const projectId = body.gameProjectId;
+    (async () => {
+      try {
+        let accumulatedText = "";
+        for await (const event of stream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            accumulatedText += event.delta.text;
+            deltas.push({ text: event.delta.text });
+          }
+        }
 
-    return Response.json({
-      fixedCode: fixedCode || null,
-      usage: {
-        input_tokens: response.usage.input_tokens,
-        output_tokens: response.usage.output_tokens,
+        const fixedCode = extractGameCode(accumulatedText) || extractGameCode(accumulatedText, false);
+
+        // Persist fixed code to DB so subsequent attempts load the latest fix
+        if (fixedCode && projectId) {
+          await serviceClient
+            .from("game_projects")
+            .update({ game_code: fixedCode, updated_at: new Date().toISOString() })
+            .eq("id", projectId);
+        }
+
+        const finalMessage = await stream.finalMessage();
+        deltas.push({
+          result: JSON.stringify({
+            fixedCode: fixedCode || null,
+            usage: {
+              input_tokens: finalMessage.usage.input_tokens,
+              output_tokens: finalMessage.usage.output_tokens,
+            },
+            credits_used: CREDITS_FIX,
+          }),
+        });
+      } catch (err) {
+        console.error("Fix-game stream error:", err);
+        deltas.push({ error: err instanceof Error ? err.message : "Fix failed" });
+      } finally {
+        streamDone = true;
+      }
+    })();
+
+    return new Response(deltaQueueToSSE(), {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
-      credits_used: CREDITS_FIX,
     });
   } catch (err) {
     console.error("Fix-game API error:", err);

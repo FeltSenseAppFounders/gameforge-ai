@@ -316,24 +316,58 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           return;
         }
 
-        const data = await res.json();
-        if (data.fixedCode) {
-          setGameCode(data.fixedCode);
-          gameCodeRef.current = data.fixedCode;
-          setFixUsage({
-            input_tokens: data.usage.input_tokens,
-            output_tokens: data.usage.output_tokens,
-            credits_used: data.credits_used,
-          });
-          const errorList = errors.map((e) => e.message).join("; ");
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
-            },
-          ]);
-        } else {
+        // Read SSE stream from fix-game endpoint
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error("No response body");
+
+        const decoder = new TextDecoder();
+        let gotResult = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const raw = line.slice(6);
+            if (raw === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(raw);
+
+              if (parsed.error) throw new Error(parsed.error);
+
+              if (parsed.result) {
+                const result = JSON.parse(parsed.result);
+                if (result.fixedCode) {
+                  gotResult = true;
+                  setGameCode(result.fixedCode);
+                  gameCodeRef.current = result.fixedCode;
+                  setFixUsage({
+                    input_tokens: result.usage.input_tokens,
+                    output_tokens: result.usage.output_tokens,
+                    credits_used: result.credits_used,
+                  });
+                  const errorList = errors.map((e) => e.message).join("; ");
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
+                    },
+                  ]);
+                }
+              }
+            } catch (e) {
+              if (e instanceof Error && e.message) throw e;
+            }
+          }
+        }
+
+        if (!gotResult) {
           setAutoFixExhausted(true);
         }
       } catch (err) {
