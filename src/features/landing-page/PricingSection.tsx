@@ -8,7 +8,7 @@ const tiers = [
     description: "50 credits to get building.",
     features: [
       "50 AI generation credits",
-      "Chat with MAX (Sonnet)",
+      "Chat with MAX",
       "Live game preview",
       "Community gallery access",
       "Export game code",
@@ -24,7 +24,7 @@ const tiers = [
     features: [
       "150 AI generation credits",
       "Chat with MAX (Sonnet)",
-      "MAX PRO mode (Opus)",
+      "MAX PRO mode — advanced generation",
       "Live game preview",
       "Community gallery access",
       "Export game code",

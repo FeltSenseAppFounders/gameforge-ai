@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendConfirmationEmail } from "@/lib/resend";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/demo/create
@@ -8,6 +9,16 @@ import { sendConfirmationEmail } from "@/lib/resend";
  * Creates a demo studio with seeded game projects. User must confirm email before signing in.
  */
 export async function POST(request: Request) {
+  // Rate limit: 3 demo accounts per hour per IP
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+  if (!(await rateLimit(`demo:${ip}`, 3, 3600))) {
+    return NextResponse.json(
+      { error: "Too many signup attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

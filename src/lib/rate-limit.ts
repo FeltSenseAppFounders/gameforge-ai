@@ -1,35 +1,32 @@
-// Simple in-memory rate limiter using a sliding window counter.
-// Suitable for single-process deployments (Next.js server).
-
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-
-// Periodic cleanup to prevent memory leaks (every 60s)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateMap) {
-    if (now > entry.resetAt) rateMap.delete(key);
-  }
-}, 60_000);
+import { createServiceClient } from "@/lib/supabase/service";
 
 /**
- * Check if a request is within the rate limit.
+ * Distributed rate limiter using Supabase.
+ * Works across all serverless instances (unlike in-memory Map).
  * Returns true if allowed, false if rate-limited.
  */
-export function rateLimit(
+export async function rateLimit(
   key: string,
   maxRequests: number,
-  windowMs: number
-): boolean {
-  const now = Date.now();
-  const entry = rateMap.get(key);
+  windowSeconds: number
+): Promise<boolean> {
+  try {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("check_rate_limit", {
+      p_key: key,
+      p_max_requests: maxRequests,
+      p_window_seconds: windowSeconds,
+    });
 
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(key, { count: 1, resetAt: now + windowMs });
+    if (error) {
+      console.error("Rate limit check failed:", error);
+      // Fail open — don't break the app if DB is down
+      return true;
+    }
+
+    return data === true;
+  } catch (err) {
+    console.error("Rate limit error:", err);
     return true;
   }
-
-  if (entry.count >= maxRequests) return false;
-
-  entry.count++;
-  return true;
 }

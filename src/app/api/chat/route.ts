@@ -61,9 +61,17 @@ export async function POST(request: Request) {
       .single();
     if (!studio) return Response.json({ error: "No studio found" }, { status: 400 });
 
-    // Rate limit: 20 requests per minute per user
-    if (!rateLimit(`chat:${user.id}`, 20, 60_000)) {
+    // Rate limit: 20 requests per minute per user (distributed via Supabase)
+    if (!(await rateLimit(`chat:${user.id}`, 20, 60))) {
       return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
+    // Require email verification before using credits
+    if (!user.email_confirmed_at) {
+      return Response.json(
+        { error: "Please verify your email before generating games." },
+        { status: 403 }
+      );
     }
 
     // Parse request
@@ -119,9 +127,28 @@ export async function POST(request: Request) {
     const useOpus = model === "max-pro";
     const isIteration = !!resolvedGameCode;
     const creditCost = useOpus ? CREDITS_MAX : isIteration ? CREDITS_ITERATION : CREDITS_DEFAULT;
+    const modelName = useOpus ? "claude-opus-4-6" : "claude-sonnet-4-6";
+
+    const serviceClient = createServiceClient();
+
+    // Daily credit cap: 50/day free, 200/day paid
+    const { data: dailyUsage } = await serviceClient.rpc("get_daily_credit_usage", {
+      p_studio_id: studio.id,
+    });
+    const { data: studioData } = await supabase
+      .from("studios")
+      .select("subscription_tier")
+      .eq("id", studio.id)
+      .single();
+    const dailyCap = studioData?.subscription_tier === "free" ? 50 : 200;
+    if ((dailyUsage ?? 0) + creditCost > dailyCap) {
+      return Response.json(
+        { error: "Daily credit limit reached. Try again tomorrow." },
+        { status: 429 }
+      );
+    }
 
     // Deduct credits atomically
-    const serviceClient = createServiceClient();
     const { data: deducted, error: deductError } = await serviceClient.rpc(
       "deduct_credit",
       { studio_id: studio.id, amount: creditCost }
@@ -133,6 +160,14 @@ export async function POST(request: Request) {
     if (!deducted) {
       return Response.json({ error: "insufficient_credits" }, { status: 402 });
     }
+
+    // Audit log: initial deduction
+    await serviceClient.from("credit_transactions").insert({
+      studio_id: studio.id,
+      amount: creditCost,
+      endpoint: "chat",
+      model: modelName,
+    });
 
     // Detect if user wants a 3D game
     const wants3D = detect3D(messages);
@@ -255,6 +290,13 @@ export async function POST(request: Request) {
               deltas.push({ status: "insufficient_credits_continue" });
               break;
             }
+            // Audit log: continuation deduction
+            await serviceClient.from("credit_transactions").insert({
+              studio_id: studio.id,
+              amount: CREDITS_CONTINUATION,
+              endpoint: "chat-continuation",
+              model: "claude-sonnet-4-6",
+            });
             continuations++;
             totalCreditsUsed += CREDITS_CONTINUATION;
             deltas.push({ status: "continuing", creditsUsed: String(totalCreditsUsed) });
@@ -277,6 +319,13 @@ export async function POST(request: Request) {
           if (!canFinish) {
             deltas.push({ status: "insufficient_credits_continue" });
           } else {
+            // Audit log: finish deduction
+            await serviceClient.from("credit_transactions").insert({
+              studio_id: studio.id,
+              amount: CREDITS_FINISH,
+              endpoint: "chat-finish",
+              model: "claude-sonnet-4-6",
+            });
             totalCreditsUsed += CREDITS_FINISH;
             deltas.push({ status: "finishing" });
 

@@ -6,6 +6,7 @@ import { FeaturedGames } from "./FeaturedGames";
 import { TrendingGames } from "./TrendingGames";
 import { ShareButton } from "./ShareButton";
 import { LikeButton } from "./LikeButton";
+import { ReportButton } from "./ReportButton";
 import { injectGameHelpers } from "@/lib/inject-game-helpers";
 
 const genres = ["all", "shooter", "platformer", "puzzle", "racing", "rpg"];
@@ -70,6 +71,7 @@ export function CommunityGallery({
               gameId={playingGame.id}
               gameName={playingGame.name}
             />
+            <ReportButton gameId={playingGame.id} />
             <button
               onClick={() => setPlayingGame(null)}
               className="text-xs font-semibold text-neutral-400 hover:text-neutral-200 px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 transition-colors"

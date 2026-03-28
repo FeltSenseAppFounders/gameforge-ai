@@ -78,9 +78,17 @@ export async function POST(request: Request) {
     if (!studio)
       return Response.json({ error: "No studio found" }, { status: 400 });
 
-    // Rate limit: 10 requests per minute per user
-    if (!rateLimit(`fix-game:${user.id}`, 10, 60_000)) {
+    // Rate limit: 10 requests per minute per user (distributed via Supabase)
+    if (!(await rateLimit(`fix-game:${user.id}`, 10, 60))) {
       return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
+    // Require email verification before using credits
+    if (!user.email_confirmed_at) {
+      return Response.json(
+        { error: "Please verify your email before using this feature." },
+        { status: 403 }
+      );
     }
 
     // Parse request (supports both new array format and legacy single error)
@@ -139,6 +147,24 @@ export async function POST(request: Request) {
 
     // Server-side credit deduction
     const serviceClient = createServiceClient();
+
+    // Daily credit cap: 50/day free, 200/day paid
+    const { data: dailyUsage } = await serviceClient.rpc("get_daily_credit_usage", {
+      p_studio_id: studio.id,
+    });
+    const { data: studioData } = await supabase
+      .from("studios")
+      .select("subscription_tier")
+      .eq("id", studio.id)
+      .single();
+    const dailyCap = studioData?.subscription_tier === "free" ? 50 : 200;
+    if ((dailyUsage ?? 0) + CREDITS_FIX > dailyCap) {
+      return Response.json(
+        { error: "Daily credit limit reached. Try again tomorrow." },
+        { status: 429 }
+      );
+    }
+
     const { data: deducted, error: deductError } = await serviceClient.rpc(
       "deduct_credit",
       { studio_id: studio.id, amount: CREDITS_FIX }
@@ -156,6 +182,14 @@ export async function POST(request: Request) {
         { status: 402 }
       );
     }
+
+    // Audit log: fix-game deduction
+    await serviceClient.from("credit_transactions").insert({
+      studio_id: studio.id,
+      amount: CREDITS_FIX,
+      endpoint: "fix-game",
+      model: "claude-sonnet-4-6",
+    });
 
     // Call Sonnet to fix the game
     const response = await anthropic.messages.create({

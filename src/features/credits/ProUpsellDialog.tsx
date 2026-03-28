@@ -14,7 +14,7 @@ const PRO_PERKS = [
   },
   {
     label: "MAX PRO MODE",
-    detail: "Opus — deeper thinking",
+    detail: "Most advanced game engine",
     icon: "brain",
   },
   {

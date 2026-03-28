@@ -1,8 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendConfirmationEmail } from "@/lib/resend";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  // Rate limit: 5 signups per hour per IP
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+  if (!(await rateLimit(`signup:${ip}`, 5, 3600))) {
+    return NextResponse.json(
+      { error: "Too many signup attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
