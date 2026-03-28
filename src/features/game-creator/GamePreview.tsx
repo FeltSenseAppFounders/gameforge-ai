@@ -287,6 +287,37 @@ export function GamePreview({
           title="Game preview"
           className="absolute inset-0 w-full h-full bg-black"
         />
+
+        {/* Auto-fix overlay */}
+        {isAutoFixing && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in-up">
+            {/* Scan lines effect */}
+            <div className="absolute inset-0 animate-scan-lines pointer-events-none" />
+
+            <div className="relative flex flex-col items-center gap-5">
+              {/* Pulsing wrench icon */}
+              <div className="w-16 h-16 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center animate-pulse-neon">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} className="text-primary-light">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
+                </svg>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg font-heading text-primary-light uppercase neon-text tracking-wider">
+                AUTO-FIXING
+              </h3>
+
+              {/* Animated progress bar */}
+              <div className="w-48 h-1 bg-neutral-800 rounded-full overflow-hidden">
+                <div className="h-full bg-primary-light rounded-full animate-[auto-fix-progress_2s_ease-in-out_infinite]" />
+              </div>
+
+              <p className="text-xs text-neutral-500 font-mono">
+                MAX is patching the code...
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
