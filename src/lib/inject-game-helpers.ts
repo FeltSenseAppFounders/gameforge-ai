@@ -25,7 +25,8 @@ canvas {
 
 // Error handler — catches JS errors in the iframe and sends them to parent via postMessage.
 // Must be injected BEFORE all other scripts so it catches early errors.
-// Uses 3 detection layers: window.onerror, capture-phase error listener, health-check fallback.
+// Uses 5 detection layers: window.onerror, capture-phase error listener,
+// unhandled rejections, health-check fallback, and CSP violation listener.
 // Debounces errors for 600ms to collect cascading syntax errors before sending.
 const ERROR_HANDLER_BLOCK = `
 <script>
@@ -80,6 +81,14 @@ const ERROR_HANDLER_BLOCK = `
         flush();
       }
     },1500);
+  });
+
+  // Layer 5: CSP violations — blocked resources, scripts, fonts, etc.
+  // CSP violations fire SecurityPolicyViolationEvent, NOT ErrorEvent,
+  // so layers 1-3 cannot detect them. Without this, blocked external
+  // assets (images, audio, fonts) fail silently and self-healing never triggers.
+  document.addEventListener('securitypolicyviolation',function(e){
+    pushError('CSP blocked '+(e.violatedDirective||'resource')+': '+(e.blockedURI||'unknown'),0,0,'');
   });
 })();
 </script>

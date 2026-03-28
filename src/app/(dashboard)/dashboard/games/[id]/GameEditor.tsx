@@ -40,6 +40,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   const gameCodeRef = useRef<string | null>(game.game_code || null);
   const hasAutoSwitched = useRef(!!game.game_code);
   const autoFixAttempts = useRef(0);
+  const pendingGameErrors = useRef<{ message: string; line: number; column: number; stack: string }[] | null>(null);
 
   // Warn before closing tab while streaming
   useEffect(() => {
@@ -91,6 +92,30 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
       if (res.status === 402) {
         openPurchaseModal();
         setMessages((prev) => prev.slice(0, -1));
+        setIsStreaming(false);
+        return;
+      }
+
+      if (res.status === 403) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Please verify your email address before generating games. Check your inbox for the verification link.",
+          },
+        ]);
+        setIsStreaming(false);
+        return;
+      }
+
+      if (res.status === 429) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Rate limit reached. Please wait a moment before sending another message.",
+          },
+        ]);
         setIsStreaming(false);
         return;
       }
@@ -193,7 +218,14 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
 
   const handleGameError = useCallback(
     async (errors: { message: string; line: number; column: number; stack: string }[]) => {
-      if (isAutoFixing || isStreaming || !gameCodeRef.current) return;
+      if (isAutoFixing || !gameCodeRef.current) return;
+      // Queue errors during streaming — the iframe's error handler is one-shot
+      // (sent=true after first flush), so if we ignore these, they're lost forever.
+      // Process queued errors after streaming ends via the useEffect below.
+      if (isStreaming) {
+        pendingGameErrors.current = errors;
+        return;
+      }
       if (autoFixAttempts.current >= 2) {
         setAutoFixExhausted(true);
         return;
@@ -228,6 +260,28 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
             {
               role: "assistant",
               content: "Auto-fix needs 2 credits but you don't have enough. Purchase more credits to enable auto-fix.",
+            },
+          ]);
+          return;
+        }
+
+        if (res.status === 403) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "Please verify your email address to enable auto-fix. Check your inbox for the verification link.",
+            },
+          ]);
+          return;
+        }
+
+        if (res.status === 429) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "Auto-fix rate limit reached. Please wait a moment and try again, or ask MAX to fix the errors manually.",
             },
           ]);
           return;
@@ -269,6 +323,17 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
     },
     [isAutoFixing, isStreaming, openPurchaseModal, refetchCredits]
   );
+
+  // Process queued game errors after streaming ends.
+  // The iframe's error handler is one-shot (sent=true after flush), so errors
+  // received during streaming are queued in pendingGameErrors and replayed here.
+  useEffect(() => {
+    if (!isStreaming && pendingGameErrors.current) {
+      const errors = pendingGameErrors.current;
+      pendingGameErrors.current = null;
+      handleGameError(errors);
+    }
+  }, [isStreaming, handleGameError]);
 
   const handleSave = useCallback(async () => {
     if (!gameCode) return;
