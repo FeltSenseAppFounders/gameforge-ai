@@ -60,7 +60,7 @@ export function Sidebar() {
       <div className="px-6 py-6">
         <Link href="/dashboard" className="flex items-center gap-1">
           <span className="text-lg font-heading text-primary-light uppercase">
-            GAMEFORGE
+            PLAYFOUNDRY
           </span>
           <span className="text-lg font-heading text-secondary uppercase">
             AI

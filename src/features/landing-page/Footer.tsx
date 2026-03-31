@@ -26,7 +26,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-1">
               <span className="text-lg font-heading text-primary-light uppercase">
-                GAMEFORGE
+                PLAYFOUNDRY
               </span>
               <span className="text-lg font-heading text-secondary uppercase">
                 AI
@@ -62,7 +62,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-neutral-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-neutral-500">
-            &copy; 2026 GameForge AI. All rights reserved.
+            &copy; 2026 PlayFoundry AI. All rights reserved.
           </p>
         </div>
       </div>

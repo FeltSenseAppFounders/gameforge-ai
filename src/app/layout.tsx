@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GameForge AI — Create Real Games With AI",
+  title: "PlayFoundry AI — Create Real Games With AI",
   description:
     "Describe your game to MAX. Watch it come to life in your browser — playable in seconds. AI-powered game creation platform.",
 };

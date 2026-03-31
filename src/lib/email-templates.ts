@@ -22,7 +22,7 @@ export function getConfirmationEmailTemplate({
         <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width: 480px; width: 100%;">
           <tr>
             <td align="center" style="padding-bottom: 32px;">
-              <span style="font-size: 24px; font-weight: 900; color: #7CFC00; text-transform: uppercase; letter-spacing: 2px;">GAMEFORGE</span>
+              <span style="font-size: 24px; font-weight: 900; color: #7CFC00; text-transform: uppercase; letter-spacing: 2px;">PLAYFOUNDRY</span>
               <span style="font-size: 24px; font-weight: 900; color: #FED985; text-transform: uppercase; letter-spacing: 2px;"> AI</span>
             </td>
           </tr>
@@ -67,7 +67,7 @@ export function getConfirmationEmailTemplate({
           <tr>
             <td align="center" style="padding-top: 24px;">
               <p style="margin: 0; font-size: 12px; color: #737373;">
-                &copy; 2026 GameForge AI. All rights reserved.
+                &copy; 2026 PlayFoundry AI. All rights reserved.
               </p>
             </td>
           </tr>
@@ -97,7 +97,7 @@ export function getPasswordResetEmailTemplate({
         <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width: 480px; width: 100%;">
           <tr>
             <td align="center" style="padding-bottom: 32px;">
-              <span style="font-size: 24px; font-weight: 900; color: #7CFC00; text-transform: uppercase; letter-spacing: 2px;">GAMEFORGE</span>
+              <span style="font-size: 24px; font-weight: 900; color: #7CFC00; text-transform: uppercase; letter-spacing: 2px;">PLAYFOUNDRY</span>
               <span style="font-size: 24px; font-weight: 900; color: #FED985; text-transform: uppercase; letter-spacing: 2px;"> AI</span>
             </td>
           </tr>
@@ -142,7 +142,7 @@ export function getPasswordResetEmailTemplate({
           <tr>
             <td align="center" style="padding-top: 24px;">
               <p style="margin: 0; font-size: 12px; color: #737373;">
-                &copy; 2026 GameForge AI. All rights reserved.
+                &copy; 2026 PlayFoundry AI. All rights reserved.
               </p>
             </td>
           </tr>

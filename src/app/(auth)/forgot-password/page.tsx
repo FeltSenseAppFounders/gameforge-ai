@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-[400px] text-center">
           <a href="/" className="flex items-center justify-center gap-1 mb-8">
             <span className="text-2xl font-heading text-primary-light uppercase">
-              GAMEFORGE
+              PLAYFOUNDRY
             </span>
             <span className="text-2xl font-heading text-secondary uppercase">
               AI
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-[400px]">
         <a href="/" className="flex items-center justify-center gap-1 mb-8">
           <span className="text-2xl font-heading text-primary-light uppercase">
-            GAMEFORGE
+            PLAYFOUNDRY
           </span>
           <span className="text-2xl font-heading text-secondary uppercase">
             AI

@@ -16,7 +16,7 @@ export interface TourStepConfig {
 
 export const TOUR_STEPS: TourStepConfig[] = [
   {
-    title: "WELCOME TO GAMEFORGE AI",
+    title: "WELCOME TO PLAYFOUNDRY AI",
     intro:
       "This is your game creation studio. MAX is your AI game designer — describe a game and he'll build it live. Let's look around.",
   },

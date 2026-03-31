@@ -3,7 +3,7 @@ import { Navbar } from "@/features/landing-page/Navbar";
 import { Footer } from "@/features/landing-page/Footer";
 
 export const metadata: Metadata = {
-  title: "GameForge AI — Create Real Games With AI",
+  title: "PlayFoundry AI — Create Real Games With AI",
   description:
     "Describe your game to MAX. Watch it come to life in your browser — playable in seconds. AI-powered game creation platform.",
   keywords: [
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://gameforge.ai",
-    siteName: "GameForge AI",
-    title: "GameForge AI — Create Real Games With AI",
+    url: "https://playfoundry.ai",
+    siteName: "PlayFoundry AI",
+    title: "PlayFoundry AI — Create Real Games With AI",
     description:
       "Describe your game to MAX. Watch it come to life in your browser — playable in seconds.",
     images: [
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "GameForge AI — Create Real Games With AI",
+        alt: "PlayFoundry AI — Create Real Games With AI",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "GameForge AI — Create Real Games With AI",
+    title: "PlayFoundry AI — Create Real Games With AI",
     description:
       "Describe your game to MAX. Watch it come to life in your browser — playable in seconds.",
     images: ["/og-image.png"],
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "GameForge AI",
+  name: "PlayFoundry AI",
   applicationCategory: "GameApplication",
   description: "AI-powered game creation platform. Describe a game and get a playable browser game in seconds.",
   offers: {

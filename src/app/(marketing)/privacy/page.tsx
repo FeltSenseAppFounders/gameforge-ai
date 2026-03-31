@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — GameForge AI",
+  title: "Privacy Policy — PlayFoundry AI",
 };
 
 export default function PrivacyPage() {
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
             <p>
               For privacy-related inquiries, please contact us at{" "}
               <span className="text-primary-light font-medium">
-                privacy@gameforgeai.com
+                privacy@playfoundry.ai
               </span>
               .
             </p>

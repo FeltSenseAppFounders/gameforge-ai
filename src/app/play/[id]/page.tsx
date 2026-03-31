@@ -32,10 +32,10 @@ export default async function PlayPage({ params }: PlayPageProps) {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded bg-[#47761E] flex items-center justify-center">
-              <span className="text-xs font-bold text-white">GF</span>
+              <span className="text-xs font-bold text-white">PF</span>
             </div>
             <span className="text-sm font-bold text-[#7CFC00] uppercase tracking-wider hidden sm:inline">
-              GAMEFORGE
+              PLAYFOUNDRY
             </span>
           </Link>
 
@@ -94,7 +94,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
             href="/try-it-now"
             className="text-xs font-semibold text-[#7CFC00] hover:underline"
           >
-            Create your own game with GAMEFORGE AI — It&apos;s free
+            Create your own game with PLAYFOUNDRY AI — It&apos;s free
           </Link>
         </div>
       </div>

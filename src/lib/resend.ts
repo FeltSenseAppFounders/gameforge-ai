@@ -15,7 +15,7 @@ function getResend(): Resend {
   return _resend;
 }
 
-const FROM = "GameForge AI <noreply@feltsense.com>";
+const FROM = "PlayFoundry AI <noreply@feltsense.com>";
 
 export async function sendConfirmationEmail({
   to,
@@ -30,7 +30,7 @@ export async function sendConfirmationEmail({
     const { error } = await getResend().emails.send({
       from: FROM,
       to,
-      subject: "Confirm your email — GameForge AI",
+      subject: "Confirm your email — PlayFoundry AI",
       html: getConfirmationEmailTemplate({ userName, confirmationUrl }),
     });
 
@@ -58,7 +58,7 @@ export async function sendPasswordResetEmail({
     const { error } = await getResend().emails.send({
       from: FROM,
       to,
-      subject: "Reset your password — GameForge AI",
+      subject: "Reset your password — PlayFoundry AI",
       html: getPasswordResetEmailTemplate({ userName, resetUrl }),
     });
 

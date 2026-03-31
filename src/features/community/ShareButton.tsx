@@ -17,7 +17,7 @@ export function ShareButton({ gameId, gameName }: ShareButtonProps) {
       ? `${window.location.origin}/play/${gameId}`
       : `/play/${gameId}`;
 
-  const shareText = `Check out ${gameName} on GameForge AI!`;
+  const shareText = `Check out ${gameName} on PlayFoundry AI!`;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

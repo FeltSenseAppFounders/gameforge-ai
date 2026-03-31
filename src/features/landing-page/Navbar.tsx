@@ -32,7 +32,7 @@ export function Navbar() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-1">
             <span className="text-lg font-heading text-primary-light uppercase">
-              GAMEFORGE
+              PLAYFOUNDRY
             </span>
             <span className="text-lg font-heading text-secondary uppercase">
               AI

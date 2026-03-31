@@ -44,8 +44,8 @@ export async function createCheckoutSession(packId: string) {
           currency: "usd",
           unit_amount: pack.priceCents,
           product_data: {
-            name: `${pack.credits} GameForge Credits`,
-            description: `${pack.credits} AI generation credits for GameForge AI`,
+            name: `${pack.credits} PlayFoundry Credits`,
+            description: `${pack.credits} AI generation credits for PlayFoundry AI`,
           },
         },
         quantity: 1,
