@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { extractGameCode } from "@/lib/prompts/game-creator";
 import { rateLimit } from "@/lib/rate-limit";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
