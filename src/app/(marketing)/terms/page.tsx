@@ -103,7 +103,7 @@ export default function TermsPage() {
             <p>
               For questions about these terms, please contact us at{" "}
               <span className="text-primary-light font-medium">
-                support@playfoundry.ai
+                support@feltsense.com
               </span>
               .
             </p>

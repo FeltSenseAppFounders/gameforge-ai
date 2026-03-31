@@ -93,7 +93,7 @@ export default function PrivacyPage() {
             <p>
               For privacy-related inquiries, please contact us at{" "}
               <span className="text-primary-light font-medium">
-                privacy@playfoundry.ai
+                support@feltsense.com
               </span>
               .
             </p>
