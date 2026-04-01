@@ -45,6 +45,8 @@ function CreateGameContent() {
   const templateLoaded = useRef(false);
   // Ref to limit auto-fix to 1 attempt per generation
   const autoFixAttempts = useRef(0);
+  // Queue errors received during streaming so we can process them after streaming ends
+  const pendingErrors = useRef<{ message: string; line: number; column: number; stack: string }[] | null>(null);
 
   // Load template if ?template= param is present
   useEffect(() => {
@@ -84,6 +86,15 @@ function CreateGameContent() {
     }
   }, [gameCode]);
 
+  // Process any errors that were queued during streaming
+  useEffect(() => {
+    if (!isStreaming && pendingErrors.current) {
+      const errors = pendingErrors.current;
+      pendingErrors.current = null;
+      handleGameError(errors);
+    }
+  }, [isStreaming, handleGameError]);
+
   const sendMessage = useCallback(async (overrideText?: string | unknown) => {
     const text = (typeof overrideText === "string" ? overrideText : input).trim();
     if (!text || isStreaming) return;
@@ -97,6 +108,7 @@ function CreateGameContent() {
     setTokenUsage(null);
     setFixUsage(null);
     autoFixAttempts.current = 0;
+    pendingErrors.current = null;
     setAutoFixExhausted(false);
 
     try {
@@ -258,6 +270,7 @@ function CreateGameContent() {
     gameCodeRef.current = null;
     hasAutoSwitched.current = false;
     autoFixAttempts.current = 0;
+    pendingErrors.current = null;
     setGameName("");
     setGameProjectId(null);
     setStreamingText("");
@@ -268,7 +281,12 @@ function CreateGameContent() {
 
   const handleGameError = useCallback(
     async (errors: { message: string; line: number; column: number; stack: string }[]) => {
-      if (isAutoFixing || isStreaming || !gameCodeRef.current) return;
+      if (isAutoFixing || !gameCodeRef.current) return;
+      // Queue errors during streaming — they'll be processed when streaming ends
+      if (isStreaming) {
+        pendingErrors.current = errors;
+        return;
+      }
       if (autoFixAttempts.current >= 2) {
         setAutoFixExhausted(true);
         return;
