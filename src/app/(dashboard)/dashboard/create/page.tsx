@@ -86,15 +86,6 @@ function CreateGameContent() {
     }
   }, [gameCode]);
 
-  // Process any errors that were queued during streaming
-  useEffect(() => {
-    if (!isStreaming && pendingErrors.current) {
-      const errors = pendingErrors.current;
-      pendingErrors.current = null;
-      handleGameError(errors);
-    }
-  }, [isStreaming, handleGameError]);
-
   const sendMessage = useCallback(async (overrideText?: string | unknown) => {
     const text = (typeof overrideText === "string" ? overrideText : input).trim();
     if (!text || isStreaming) return;
@@ -364,6 +355,15 @@ function CreateGameContent() {
     },
     [isAutoFixing, isStreaming, openPurchaseModal, refetchCredits]
   );
+
+  // Process any errors that were queued during streaming
+  useEffect(() => {
+    if (!isStreaming && pendingErrors.current) {
+      const errors = pendingErrors.current;
+      pendingErrors.current = null;
+      handleGameError(errors);
+    }
+  }, [isStreaming, handleGameError]);
 
   const handleRetry = useCallback(() => {
     autoFixAttempts.current = 0;
