@@ -259,7 +259,7 @@ function CreateGameContent() {
         pendingErrors.current = errors;
         return;
       }
-      if (autoFixAttempts.current >= 2) {
+      if (autoFixAttempts.current >= 5) {
         setAutoFixExhausted(true);
         return;
       }
@@ -325,7 +325,7 @@ function CreateGameContent() {
                 ...prev,
                 {
                   role: "assistant",
-                  content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
+                  content: `Auto-fix attempt ${autoFixAttempts.current}/5: "${errorList}" (2 credits)`,
                 },
               ]);
             }

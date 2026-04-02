@@ -181,7 +181,7 @@ export async function POST(request: Request) {
       .select("subscription_tier")
       .eq("id", studio.id)
       .single();
-    const dailyCap = studioData?.subscription_tier === "free" ? 50 : 200;
+    const dailyCap = studioData?.subscription_tier === "free" ? 50 : 500;
     if ((dailyUsage ?? 0) + creditCost > dailyCap) {
       return Response.json(
         { error: "Daily credit limit reached. Try again tomorrow." },
@@ -379,10 +379,10 @@ export async function POST(request: Request) {
             const streamMessages: { role: "user" | "assistant"; content: string }[] = isFirst
               ? messages.map((m) => ({ role: m.role, content: m.content }))
               : [
-                  ...messages.map((m) => ({ role: m.role, content: m.content })),
-                  { role: "assistant", content: accumulatedText },
-                  { role: "user", content: "Continue exactly where you stopped. Output ONLY the remaining code — no repetition, no preamble, no explanation." },
-                ];
+                ...messages.map((m) => ({ role: m.role, content: m.content })),
+                { role: "assistant", content: accumulatedText },
+                { role: "user", content: "Continue exactly where you stopped. Output ONLY the remaining code — no repetition, no preamble, no explanation." },
+              ];
 
             const stream = anthropic.messages.stream({
               model: "claude-sonnet-4-6",

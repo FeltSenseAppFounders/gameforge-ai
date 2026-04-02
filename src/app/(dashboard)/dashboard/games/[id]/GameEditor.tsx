@@ -232,7 +232,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
         pendingGameErrors.current = errors;
         return;
       }
-      if (autoFixAttempts.current >= 2) {
+      if (autoFixAttempts.current >= 5) {
         console.warn("[GF-HEAL] EXHAUSTED: 2 attempts used");
         setAutoFixExhausted(true);
         return;
@@ -323,7 +323,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
                 ...prev,
                 {
                   role: "assistant",
-                  content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
+                  content: `Auto-fix attempt ${autoFixAttempts.current}/5: "${errorList}" (2 credits)`,
                 },
               ]);
             }

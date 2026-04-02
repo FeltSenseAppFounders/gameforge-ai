@@ -61,7 +61,7 @@ Your job:
 - Output ONLY the fixed HTML — no markdown fences, no explanation, no preamble
 - Wrap the game code in <!-- GAME_CODE_START --> and <!-- GAME_CODE_END --> markers
 - Preserve ALL game functionality — do not remove features, do not simplify the game
-- If this is attempt 2 (retry), the previous fix did not work. Try a DIFFERENT approach:
+- If this is attempt 2 or later (retry), the previous fix did not work. Try a DIFFERENT approach:
   - Re-read the errors carefully — the root cause may not be what you assumed
   - Consider rewriting the problematic section from scratch rather than patching
   - Check for MULTIPLE bugs, not just one`;
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
       .select("subscription_tier")
       .eq("id", studio.id)
       .single();
-    const dailyCap = studioData?.subscription_tier === "free" ? 50 : 200;
+    const dailyCap = studioData?.subscription_tier === "free" ? 50 : 500;
     if ((dailyUsage ?? 0) + CREDITS_FIX > dailyCap) {
       return Response.json(
         { error: "Daily credit limit reached. Try again tomorrow." },
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Start streaming Claude fix
+    // Start streaming Claude fix — full file mode
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-6",
       max_tokens: 16000,
@@ -230,7 +230,7 @@ export async function POST(request: Request) {
         {
           role: "user",
           content: [
-            `Fix attempt: ${attemptNumber} of 2`,
+            `Fix attempt: ${attemptNumber} of 5`,
             ``,
             `=== RUNTIME ERRORS (${errorMessages.length}) ===`,
             ...errorMessages.map((e, i) => `Error ${i + 1}:\n${e}`),

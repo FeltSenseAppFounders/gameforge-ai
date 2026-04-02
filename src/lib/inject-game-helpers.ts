@@ -59,15 +59,25 @@ const ERROR_HANDLER_BLOCK = `
 
   function pushError(msg,line,col,stack){
     if(collected.length>=MAX_ERRORS)return;
-    collected.push({message:String(msg).slice(0,500),line:line||0,column:col||0,stack:String(stack||'').slice(0,1000)});
-    console.warn('[GF-HEAL] pushError #'+collected.length+':',String(msg).slice(0,120));
+    var m=String(msg).slice(0,500);
+    // Skip useless cross-origin "Script error." with no details
+    if(m==='Script error.'&&!line&&!col&&!stack)return;
+    // If message is just "Script error." but we have line/col, enrich it
+    if(m==='Script error.'||m==='Script error'){
+      m='Runtime error at line '+line+', col '+col+(stack?' — '+String(stack).split('\\n')[0]:'');
+    }
+    collected.push({message:m,line:line||0,column:col||0,stack:String(stack||'').slice(0,1000)});
+    console.warn('[GF-HEAL] pushError #'+collected.length+':',m.slice(0,120));
     if(!timer){timer=setTimeout(flush,DEBOUNCE_MS);}
     if(collected.length>=MAX_ERRORS)flush();
   }
 
-  // Layer 1: Legacy window.onerror
+  // Layer 1: Legacy window.onerror — try to extract real error info
   window.onerror=function(msg,source,line,col,error){
-    pushError(msg,line,col,error&&error.stack||'');
+    var realMsg=msg;
+    // If error object exists, prefer its message (more descriptive than the event msg)
+    if(error&&error.message)realMsg=error.message;
+    pushError(realMsg,line,col,error&&error.stack||'');
     return false;
   };
 
