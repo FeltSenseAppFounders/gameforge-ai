@@ -28,7 +28,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [selectedModel, setSelectedModel] = useState<"max" | "max-pro">("max");
-  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null>(null);
+  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "building" | "polishing" | "auto-fixing" | null>(null);
   const [isAutoFixing, setIsAutoFixing] = useState(false);
   const [autoFixExhausted, setAutoFixExhausted] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);

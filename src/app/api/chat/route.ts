@@ -19,6 +19,15 @@ const CREDITS_ITERATION = 2; // Sonnet iteration (existing game code = higher in
 const CREDITS_CONTINUATION = 2; // Per continuation (always Sonnet, input-heavy)
 const CREDITS_FINISH = 1; // Finish-or-fix fallback (always Sonnet)
 
+// Opus 3-phase pipeline: "Opus designs, Sonnet builds"
+// Fits within 300s timeout (~145-207s total vs 275-410s before)
+const OPUS_PHASE1_MAX_TOKENS = 8000;
+const OPUS_PHASE1_THINKING = 2000;
+const OPUS_PHASE2_MAX_TOKENS = 12000;
+const OPUS_PHASE3_MAX_TOKENS = 6000;
+const OPUS_CONTINUE_INSTRUCTION =
+  "Continue the game code exactly where it stopped. Complete ALL remaining game logic, enemy behaviors, sprites, collision handling, and UI. Output ONLY the remaining code — no repetition of already-written code, no preamble, no explanation. End with closing </script></body></html> tags followed by <!-- GAME_CODE_END -->.";
+
 // Detect if user is requesting a 3D game
 function detect3D(messages: { role: string; content: string }[]): boolean {
   const lastMsg = messages[messages.length - 1]?.content?.toLowerCase() ?? "";
@@ -253,87 +262,190 @@ export async function POST(request: Request) {
     // Async streaming loop with auto-continue
     (async () => {
       try {
-        let continuations = 0;
         let totalInputTokens = 0;
         let totalOutputTokens = 0;
         let totalCreditsUsed = creditCost; // Initial deduction already happened
 
-        while (true) {
-          const isFirst = continuations === 0;
+        // Helper: check if game code is complete (both markers present)
+        const isGameComplete = () =>
+          accumulatedText.includes("<!-- GAME_CODE_START -->") &&
+          accumulatedText.includes("<!-- GAME_CODE_END -->");
 
-          // Build messages — continuations append partial response + "continue" instruction
-          const streamMessages: { role: "user" | "assistant"; content: string }[] = isFirst
-            ? messages.map((m) => ({ role: m.role, content: m.content }))
-            : [
-                ...messages.map((m) => ({ role: m.role, content: m.content })),
-                { role: "assistant", content: accumulatedText },
-                { role: "user", content: "Continue exactly where you stopped. Output ONLY the remaining code — no repetition, no preamble, no explanation." },
-              ];
+        // Helper: check if game code is incomplete (start marker but no end)
+        const isGameIncompleteStarted = () =>
+          accumulatedText.includes("<!-- GAME_CODE_START -->") &&
+          !accumulatedText.includes("<!-- GAME_CODE_END -->");
 
-          // First attempt: use selected model. Continuations: always Sonnet (cheaper).
-          const useThinking = isFirst && useOpus;
-          const stream = anthropic.messages.stream({
-            model: isFirst && useOpus ? "claude-opus-4-6" : "claude-sonnet-4-6",
-            max_tokens: useThinking ? 16000 : 16000,
-            ...(useThinking ? { thinking: { type: "enabled" as const, budget_tokens: 5000 } } : {}),
+        if (useOpus) {
+          // ═══ OPUS 3-PHASE PIPELINE: "Opus designs, Sonnet builds" ═══
+          // Phase 1: Opus designs + starts the game (8K tokens, 2K thinking)
+          // Phase 2: Sonnet builds/completes (12K tokens) — if needed
+          // Phase 3: Sonnet polishes/finishes (6K tokens) — if still needed
+          // All covered by the initial 8-credit charge, no extra deductions.
+
+          // ─── Phase 1: Opus designs + starts ───
+          const phase1Stream = anthropic.messages.stream({
+            model: "claude-opus-4-6",
+            max_tokens: OPUS_PHASE1_MAX_TOKENS,
+            thinking: { type: "enabled" as const, budget_tokens: OPUS_PHASE1_THINKING },
             system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-            messages: streamMessages,
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
           });
 
-          // Stream events into delta queue
-          for await (const event of stream) {
-            if (isFirst && event.type === "content_block_start") {
+          for await (const event of phase1Stream) {
+            if (event.type === "content_block_start") {
               const blockType = event.content_block.type;
-              if (blockType === "thinking") {
-                deltas.push({ status: "thinking" });
-              } else if (blockType === "text") {
-                deltas.push({ status: "generating" });
-              }
+              if (blockType === "thinking") deltas.push({ status: "thinking" });
+              else if (blockType === "text") deltas.push({ status: "generating" });
             }
-            if (
-              event.type === "content_block_delta" &&
-              event.delta.type === "text_delta"
-            ) {
+            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
               accumulatedText += event.delta.text;
               deltas.push({ text: event.delta.text });
             }
           }
 
-          // Collect token usage
-          const msg = await stream.finalMessage();
-          totalInputTokens += msg.usage.input_tokens;
-          totalOutputTokens += msg.usage.output_tokens;
+          const phase1Msg = await phase1Stream.finalMessage();
+          totalInputTokens += phase1Msg.usage.input_tokens;
+          totalOutputTokens += phase1Msg.usage.output_tokens;
 
-          // Check if continuation is needed
-          const needsContinuation =
-            msg.stop_reason === "max_tokens" &&
-            accumulatedText.includes("<!-- GAME_CODE_START -->") &&
-            !accumulatedText.includes("<!-- GAME_CODE_END -->") &&
-            continuations < MAX_CONTINUATIONS;
+          // ─── Phase 2: Sonnet builds/completes (if game incomplete) ───
+          if (!isGameComplete()) {
+            deltas.push({ status: "building" });
 
-          if (needsContinuation) {
-            // Server-side credit validation before continuing
-            const { data: canContinue } = await serviceClient.rpc("deduct_credit", {
-              studio_id: studio.id,
-              amount: CREDITS_CONTINUATION,
+            const phase2Stream = anthropic.messages.stream({
+              model: "claude-sonnet-4-6",
+              max_tokens: OPUS_PHASE2_MAX_TOKENS,
+              system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+              messages: [
+                ...messages.map((m) => ({ role: m.role, content: m.content })),
+                { role: "assistant" as const, content: accumulatedText },
+                { role: "user" as const, content: OPUS_CONTINUE_INSTRUCTION },
+              ],
             });
-            if (!canContinue) {
-              deltas.push({ status: "insufficient_credits_continue" });
-              break;
+
+            for await (const event of phase2Stream) {
+              if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+                accumulatedText += event.delta.text;
+                deltas.push({ text: event.delta.text });
+              }
             }
-            // Audit log: continuation deduction
+
+            const phase2Msg = await phase2Stream.finalMessage();
+            totalInputTokens += phase2Msg.usage.input_tokens;
+            totalOutputTokens += phase2Msg.usage.output_tokens;
+
+            // Audit log (0 credits — covered by initial 8)
             await serviceClient.from("credit_transactions").insert({
               studio_id: studio.id,
-              amount: CREDITS_CONTINUATION,
-              endpoint: "chat-continuation",
+              amount: 0,
+              endpoint: "chat-opus-phase2",
               model: "claude-sonnet-4-6",
             });
-            continuations++;
-            totalCreditsUsed += CREDITS_CONTINUATION;
-            deltas.push({ status: "continuing", creditsUsed: String(totalCreditsUsed) });
-            continue;
+
+            // ─── Phase 3: Sonnet polishes/finishes (if still incomplete) ───
+            if (isGameIncompleteStarted()) {
+              deltas.push({ status: "polishing" });
+
+              const phase3Stream = anthropic.messages.stream({
+                model: "claude-sonnet-4-6",
+                max_tokens: OPUS_PHASE3_MAX_TOKENS,
+                system: "You receive incomplete Phaser.js game HTML. Output ONLY the remaining code to make it runnable — close open functions, complete unfinished features, close script tags, body, and html tags. End with <!-- GAME_CODE_END -->. Simplify remaining features if needed. Output raw code only — no markdown, no explanation.",
+                messages: [
+                  { role: "user" as const, content: `Complete this game. Output ONLY what comes after the last line:\n\n${accumulatedText.slice(-4000)}` },
+                ],
+              });
+
+              for await (const event of phase3Stream) {
+                if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+                  accumulatedText += event.delta.text;
+                  deltas.push({ text: event.delta.text });
+                }
+              }
+
+              const phase3Msg = await phase3Stream.finalMessage();
+              totalInputTokens += phase3Msg.usage.input_tokens;
+              totalOutputTokens += phase3Msg.usage.output_tokens;
+
+              await serviceClient.from("credit_transactions").insert({
+                studio_id: studio.id,
+                amount: 0,
+                endpoint: "chat-opus-phase3",
+                model: "claude-sonnet-4-6",
+              });
+            }
           }
-          break;
+        } else {
+          // ═══ SONNET PATH (unchanged) ═══
+          let continuations = 0;
+
+          while (true) {
+            const isFirst = continuations === 0;
+
+            const streamMessages: { role: "user" | "assistant"; content: string }[] = isFirst
+              ? messages.map((m) => ({ role: m.role, content: m.content }))
+              : [
+                  ...messages.map((m) => ({ role: m.role, content: m.content })),
+                  { role: "assistant", content: accumulatedText },
+                  { role: "user", content: "Continue exactly where you stopped. Output ONLY the remaining code — no repetition, no preamble, no explanation." },
+                ];
+
+            const stream = anthropic.messages.stream({
+              model: "claude-sonnet-4-6",
+              max_tokens: 16000,
+              system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+              messages: streamMessages,
+            });
+
+            for await (const event of stream) {
+              if (isFirst && event.type === "content_block_start") {
+                const blockType = event.content_block.type;
+                if (blockType === "thinking") {
+                  deltas.push({ status: "thinking" });
+                } else if (blockType === "text") {
+                  deltas.push({ status: "generating" });
+                }
+              }
+              if (
+                event.type === "content_block_delta" &&
+                event.delta.type === "text_delta"
+              ) {
+                accumulatedText += event.delta.text;
+                deltas.push({ text: event.delta.text });
+              }
+            }
+
+            const msg = await stream.finalMessage();
+            totalInputTokens += msg.usage.input_tokens;
+            totalOutputTokens += msg.usage.output_tokens;
+
+            const needsContinuation =
+              msg.stop_reason === "max_tokens" &&
+              accumulatedText.includes("<!-- GAME_CODE_START -->") &&
+              !accumulatedText.includes("<!-- GAME_CODE_END -->") &&
+              continuations < MAX_CONTINUATIONS;
+
+            if (needsContinuation) {
+              const { data: canContinue } = await serviceClient.rpc("deduct_credit", {
+                studio_id: studio.id,
+                amount: CREDITS_CONTINUATION,
+              });
+              if (!canContinue) {
+                deltas.push({ status: "insufficient_credits_continue" });
+                break;
+              }
+              await serviceClient.from("credit_transactions").insert({
+                studio_id: studio.id,
+                amount: CREDITS_CONTINUATION,
+                endpoint: "chat-continuation",
+                model: "claude-sonnet-4-6",
+              });
+              continuations++;
+              totalCreditsUsed += CREDITS_CONTINUATION;
+              deltas.push({ status: "continuing", creditsUsed: String(totalCreditsUsed) });
+              continue;
+            }
+            break;
+          }
         }
 
         // GUARANTEE: finish-or-fix fallback if game is still incomplete

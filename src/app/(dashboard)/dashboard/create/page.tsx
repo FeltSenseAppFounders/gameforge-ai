@@ -25,7 +25,7 @@ function CreateGameContent() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
-  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null>(null);
+  const [streamPhase, setStreamPhase] = useState<"thinking" | "generating" | "continuing" | "finishing" | "building" | "polishing" | "auto-fixing" | null>(null);
   const [selectedModel, setSelectedModel] = useState<"max" | "max-pro">("max");
   const [gameCode, setGameCode] = useState<string | null>(null);
   const [gameName, setGameName] = useState<string>("");

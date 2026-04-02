@@ -16,7 +16,7 @@ interface ChatPanelProps {
   onSend: () => void;
   isStreaming: boolean;
   streamingText: string;
-  streamPhase?: "thinking" | "generating" | "continuing" | "finishing" | "auto-fixing" | null;
+  streamPhase?: "thinking" | "generating" | "continuing" | "finishing" | "building" | "polishing" | "auto-fixing" | null;
   onNewGame: () => void;
   credits?: number;
   onBuyCredits?: () => void;
@@ -174,10 +174,27 @@ export function ChatPanel({
   // Detect "code in progress" — start marker present, end marker not yet
   const isBuildingCode = isStreaming && streamingText.includes("<!-- GAME_CODE_START -->") && !streamingText.includes("<!-- GAME_CODE_END -->");
 
+  const buildingPhaseMessages = useMemo(() => [
+    "Opus designed it, now building at warp speed...",
+    "Turning the blueprint into code...",
+    "Wiring up sprites and collisions...",
+    "Assembling the game logic...",
+    "Sonnet is speed-running the build...",
+  ], []);
+
+  const polishingPhaseMessages = useMemo(() => [
+    "Final polish pass...",
+    "Adding the finishing touches...",
+    "Closing out the last bits of code...",
+    "Almost there, wrapping up...",
+  ], []);
+
   const phaseMessages = streamPhase === "thinking" ? thinkingMessages
     : streamPhase === "generating" ? generatingMessages
     : streamPhase === "continuing" ? continuingMessages
     : streamPhase === "finishing" ? finishingMessages
+    : streamPhase === "building" ? buildingPhaseMessages
+    : streamPhase === "polishing" ? polishingPhaseMessages
     : generatingMessages;
 
   const showPhaseRotating = isStreaming && !streamingText && streamPhase !== "auto-fixing";
@@ -408,6 +425,16 @@ export function ChatPanel({
               ) : streamPhase === "finishing" ? (
                 <div className="flex items-center gap-2.5">
                   <span className="text-lg animate-pulse">🏁</span>
+                  <span key={rotatingMsg} className="text-sm font-semibold text-secondary neon-text-yellow animate-fade-in-up">{rotatingMsg}</span>
+                </div>
+              ) : streamPhase === "building" ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">🔨</span>
+                  <span key={rotatingMsg} className="text-sm font-semibold text-primary-light neon-text animate-fade-in-up">{rotatingMsg}</span>
+                </div>
+              ) : streamPhase === "polishing" ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg animate-pulse">✨</span>
                   <span key={rotatingMsg} className="text-sm font-semibold text-secondary neon-text-yellow animate-fade-in-up">{rotatingMsg}</span>
                 </div>
               ) : streamPhase === "auto-fixing" ? (
