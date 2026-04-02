@@ -28,6 +28,7 @@ interface ChatPanelProps {
   isAutoFixing?: boolean;
   autoFixExhausted?: boolean;
   onRetry?: () => void;
+  lastGameErrors?: string[];
 }
 
 function MaxAvatar() {
@@ -98,6 +99,7 @@ export function ChatPanel({
   isAutoFixing,
   autoFixExhausted,
   onRetry,
+  lastGameErrors,
 }: ChatPanelProps) {
   const { showProUpsell } = useCredits();
   const outOfCredits = credits !== undefined && credits <= 0;
@@ -425,17 +427,26 @@ export function ChatPanel({
 
       {/* Auto-fix exhausted — retry banner */}
       {autoFixExhausted && !isStreaming && !isAutoFixing && onRetry && (
-        <div className="px-4 py-3 bg-red-500/10 border-t border-red-500/20 flex items-center gap-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-          <p className="text-xs text-red-300 flex-1">
-            Something went wrong with the game code. Auto-fix couldn&apos;t resolve it.
-          </p>
-          <button
-            onClick={onRetry}
-            className="shrink-0 text-xs font-bold text-primary-light hover:text-white px-3 py-1.5 rounded border border-primary/40 hover:border-primary-light hover:bg-primary/10 transition-colors uppercase tracking-wider"
-          >
-            Retry
-          </button>
+        <div className="px-4 py-3 bg-red-500/10 border-t border-red-500/20">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+            <p className="text-xs text-red-300 flex-1">
+              Auto-fix couldn&apos;t resolve the errors. Ask MAX to fix it or retry.
+            </p>
+            <button
+              onClick={onRetry}
+              className="shrink-0 text-xs font-bold text-primary-light hover:text-white px-3 py-1.5 rounded border border-primary/40 hover:border-primary-light hover:bg-primary/10 transition-colors uppercase tracking-wider"
+            >
+              Retry
+            </button>
+          </div>
+          {lastGameErrors && lastGameErrors.length > 0 && (
+            <div className="mt-2 ml-4 text-[10px] text-neutral-500 font-mono space-y-0.5">
+              {lastGameErrors.slice(0, 3).map((e, i) => (
+                <div key={i} className="truncate">&bull; {e}</div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

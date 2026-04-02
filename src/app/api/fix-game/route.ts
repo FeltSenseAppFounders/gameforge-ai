@@ -256,6 +256,15 @@ export async function POST(request: Request) {
           }
         }
 
+        // Force-close HTML if truncated (GAME_CODE_START present but no END marker)
+        if (
+          accumulatedText.includes("<!-- GAME_CODE_START -->") &&
+          !accumulatedText.includes("<!-- GAME_CODE_END -->")
+        ) {
+          const closing = "\n</script>\n</body>\n</html>\n<!-- GAME_CODE_END -->";
+          accumulatedText += closing;
+        }
+
         const fixedCode = extractGameCode(accumulatedText) || extractGameCode(accumulatedText, false);
 
         // Persist fixed code to DB so subsequent attempts load the latest fix

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
+import { readSSEStream } from "@/lib/sse-reader";
 import { createClient } from "@/lib/supabase/client";
 import { GAME_TEMPLATES } from "@/lib/game-templates";
 import { useCredits } from "@/features/credits/CreditsProvider";
@@ -35,6 +36,7 @@ function CreateGameContent() {
   const [autoFixExhausted, setAutoFixExhausted] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
   const [fixUsage, setFixUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
+  const [lastGameErrors, setLastGameErrors] = useState<string[]>([]);
   const { balance: credits, refetch: refetchCredits, openPurchaseModal, isPaidUser } = useCredits();
 
   // Ref to keep current gameCode accessible inside async callbacks
@@ -147,71 +149,37 @@ function CreateGameContent() {
         throw new Error(`API error: ${res.status}`);
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      const decoder = new TextDecoder();
       let fullText = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for await (const parsed of readSSEStream(res)) {
+        if (parsed.error) throw new Error(parsed.error);
+        if (parsed.projectId) setGameProjectId(parsed.projectId);
+        if (parsed.usage) setTokenUsage(JSON.parse(parsed.usage));
+        if (parsed.status) {
+          if (parsed.status === "insufficient_credits_continue") {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "Game generation incomplete — not enough credits to continue. Purchase more credits to generate complex games.",
+              },
+            ]);
+          }
+          setStreamPhase(parsed.status as typeof streamPhase);
+        }
+        if (parsed.text) {
+          fullText += parsed.text;
+          setStreamingText(fullText);
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+          const code = extractGameCode(fullText);
+          if (code) {
+            setGameCode(code);
+            gameCodeRef.current = code;
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.error) {
-                throw new Error(parsed.error);
-              }
-              if (parsed.projectId) {
-                setGameProjectId(parsed.projectId);
-              }
-              if (parsed.usage) {
-                setTokenUsage(JSON.parse(parsed.usage));
-              }
-              if (parsed.status) {
-                if (parsed.status === "insufficient_credits_continue") {
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      role: "assistant",
-                      content: "Game generation incomplete — not enough credits to continue. Purchase more credits to generate complex games.",
-                    },
-                  ]);
-                }
-                setStreamPhase(parsed.status);
-              }
-              if (parsed.text) {
-                fullText += parsed.text;
-                setStreamingText(fullText);
-
-                // Try to extract game code as it streams
-                const code = extractGameCode(fullText);
-                if (code) {
-                  setGameCode(code);
-                  gameCodeRef.current = code;
-
-                  // Extract game name from first user message if not set
-                  if (!gameName && updatedMessages.length > 0) {
-                    const firstMsg = updatedMessages[0].content;
-                    // Derive a simple name from the first message
-                    const name =
-                      firstMsg.length > 40
-                        ? firstMsg.slice(0, 40) + "..."
-                        : firstMsg;
-                    setGameName(name);
-                  }
-                }
-              }
-            } catch {
-              // Skip malformed JSON lines
+            if (!gameName && updatedMessages.length > 0) {
+              const firstMsg = updatedMessages[0].content;
+              const name = firstMsg.length > 40 ? firstMsg.slice(0, 40) + "..." : firstMsg;
+              setGameName(name);
             }
           }
         }
@@ -285,6 +253,7 @@ function CreateGameContent() {
       autoFixAttempts.current++;
       setIsAutoFixing(true);
       setStreamPhase("auto-fixing");
+      setLastGameErrors(errors.map((e) => e.message));
 
       const errorSummaries = errors.map((e) => {
         let summary = e.message;
@@ -324,24 +293,32 @@ function CreateGameContent() {
           return;
         }
 
-        const data = await res.json();
-        if (data.fixedCode) {
-          setGameCode(data.fixedCode);
-          gameCodeRef.current = data.fixedCode;
-          setFixUsage({
-            input_tokens: data.usage.input_tokens,
-            output_tokens: data.usage.output_tokens,
-            credits_used: data.credits_used,
-          });
-          const errorList = errors.map((e) => e.message).join("; ");
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
-            },
-          ]);
-        } else {
+        let gotResult = false;
+        for await (const parsed of readSSEStream(res)) {
+          if (parsed.error) throw new Error(parsed.error);
+          if (parsed.result) {
+            const result = JSON.parse(parsed.result);
+            if (result.fixedCode) {
+              gotResult = true;
+              setGameCode(result.fixedCode);
+              gameCodeRef.current = result.fixedCode;
+              setFixUsage({
+                input_tokens: result.usage.input_tokens,
+                output_tokens: result.usage.output_tokens,
+                credits_used: result.credits_used,
+              });
+              const errorList = errors.map((e) => e.message).join("; ");
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
+                },
+              ]);
+            }
+          }
+        }
+        if (!gotResult) {
           setAutoFixExhausted(true);
         }
       } catch (err) {
@@ -520,6 +497,7 @@ function CreateGameContent() {
           isAutoFixing={isAutoFixing}
           autoFixExhausted={autoFixExhausted}
           onRetry={handleRetry}
+          lastGameErrors={lastGameErrors}
         />
       </div>
 

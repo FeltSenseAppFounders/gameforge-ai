@@ -204,7 +204,7 @@ export async function POST(request: Request) {
     const wants3D = detect3D(messages);
 
     // Build system prompt with optional genre hints and 3D mode
-    let systemPrompt = buildSystemPrompt(genre, wants3D);
+    let systemPrompt = buildSystemPrompt(genre, wants3D, useOpus ? "opus" : "sonnet");
     if (resolvedGameCode) {
       // Strip GAME_CODE markers to prevent delimiter injection / prompt injection
       const sanitizedCode = resolvedGameCode

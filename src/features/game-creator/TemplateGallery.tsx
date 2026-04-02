@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GAME_TEMPLATES, type GameTemplate } from "@/lib/game-templates";
+import { injectGameHelpers } from "@/lib/inject-game-helpers";
 import { TemplateCard } from "./TemplateCard";
 
 export function TemplateGallery() {
@@ -11,10 +12,26 @@ export function TemplateGallery() {
 
   const handlePlay = useCallback((template: GameTemplate) => {
     setPlaying(template);
+    window.history.pushState({ templatePlay: template.id }, "", null);
+  }, []);
+
+  // Close modal on browser back button
+  useEffect(() => {
+    if (!playing) return;
+    const handlePopState = () => setPlaying(null);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [playing]);
+
+  const handleClose = useCallback(() => {
+    window.history.back();
   }, []);
 
   const handleCustomize = useCallback(
     (template: GameTemplate) => {
+      // Replace the template-play history entry before navigating
+      window.history.replaceState(null, "", window.location.href);
+      setPlaying(null);
       router.push(`/dashboard/create?template=${template.id}`);
     },
     [router],
@@ -42,7 +59,7 @@ export function TemplateGallery() {
               CUSTOMIZE WITH MAX
             </button>
             <button
-              onClick={() => setPlaying(null)}
+              onClick={handleClose}
               className="text-xs font-semibold text-neutral-400 hover:text-neutral-200 px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 transition-colors"
             >
               CLOSE
@@ -53,7 +70,7 @@ export function TemplateGallery() {
         {/* Game iframe */}
         <div className="flex-1">
           <iframe
-            srcDoc={playing.gameCode}
+            srcDoc={injectGameHelpers(playing.gameCode)}
             sandbox="allow-scripts"
             title={playing.name}
             className="w-full h-full bg-black"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import type { GameProject } from "@/core/types";
 import { FeaturedGames } from "./FeaturedGames";
 import { TrendingGames } from "./TrendingGames";
@@ -32,6 +32,23 @@ export function CommunityGallery({
 }: CommunityGalleryProps) {
   const [filter, setFilter] = useState("all");
   const [playingGame, setPlayingGame] = useState<GameProject | null>(null);
+
+  const handlePlay = useCallback((game: GameProject) => {
+    setPlayingGame(game);
+    window.history.pushState({ communityPlay: game.id }, "", null);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    window.history.back();
+  }, []);
+
+  // Close modal on browser back button
+  useEffect(() => {
+    if (!playingGame) return;
+    const handlePopState = () => setPlayingGame(null);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [playingGame]);
 
   const filtered = useMemo(
     () =>
@@ -73,7 +90,7 @@ export function CommunityGallery({
             />
             <ReportButton gameId={playingGame.id} />
             <button
-              onClick={() => setPlayingGame(null)}
+              onClick={handleClose}
               className="text-xs font-semibold text-neutral-400 hover:text-neutral-200 px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 transition-colors"
             >
               CLOSE
@@ -122,7 +139,7 @@ export function CommunityGallery({
           <h2 className="text-xl font-heading text-secondary uppercase mb-4">
             FEATURED
           </h2>
-          <FeaturedGames games={featured} onPlay={setPlayingGame} />
+          <FeaturedGames games={featured} onPlay={handlePlay} />
         </section>
       )}
 
@@ -132,7 +149,7 @@ export function CommunityGallery({
           <h2 className="text-xl font-heading text-accent uppercase mb-4">
             TRENDING
           </h2>
-          <TrendingGames games={trending} onPlay={setPlayingGame} />
+          <TrendingGames games={trending} onPlay={handlePlay} />
         </section>
       )}
 
@@ -189,7 +206,7 @@ export function CommunityGallery({
             {filtered.map((game) => (
               <button
                 key={game.id}
-                onClick={() => setPlayingGame(game)}
+                onClick={() => handlePlay(game)}
                 className="group block bg-surface border border-neutral-700 rounded-lg overflow-hidden hover:border-primary/40 transition-colors text-left"
               >
                 {/* Preview thumbnail */}

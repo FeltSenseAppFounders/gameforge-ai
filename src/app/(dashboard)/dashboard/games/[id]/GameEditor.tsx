@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
+import { readSSEStream } from "@/lib/sse-reader";
 import { scanGameCode } from "@/lib/game-scanner";
 import { createClient } from "@/lib/supabase/client";
 import { useCredits } from "@/features/credits/CreditsProvider";
@@ -32,6 +33,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
   const [autoFixExhausted, setAutoFixExhausted] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
   const [fixUsage, setFixUsage] = useState<{ input_tokens: number; output_tokens: number; credits_used: number } | null>(null);
+  const [lastGameErrors, setLastGameErrors] = useState<string[]>([]);
   const { balance: credits, refetch: refetchCredits, openPurchaseModal, isPaidUser } =
     useCredits();
   const [activeTab, setActiveTab] = useState<"chat" | "preview">(
@@ -141,55 +143,31 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);
 
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      const decoder = new TextDecoder();
       let fullText = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for await (const parsed of readSSEStream(res)) {
+        if (parsed.error) throw new Error(parsed.error);
+        if (parsed.usage) setTokenUsage(JSON.parse(parsed.usage));
+        if (parsed.status) {
+          if (parsed.status === "insufficient_credits_continue") {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "Game generation incomplete — not enough credits to continue. Purchase more credits to generate complex games.",
+              },
+            ]);
+          }
+          setStreamPhase(parsed.status as typeof streamPhase);
+        }
+        if (parsed.text) {
+          fullText += parsed.text;
+          setStreamingText(fullText);
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.error) throw new Error(parsed.error);
-              if (parsed.usage) {
-                setTokenUsage(JSON.parse(parsed.usage));
-              }
-              if (parsed.status) {
-                if (parsed.status === "insufficient_credits_continue") {
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      role: "assistant",
-                      content: "Game generation incomplete — not enough credits to continue. Purchase more credits to generate complex games.",
-                    },
-                  ]);
-                }
-                setStreamPhase(parsed.status);
-              }
-              if (parsed.text) {
-                fullText += parsed.text;
-                setStreamingText(fullText);
-
-                const code = extractGameCode(fullText);
-                if (code) {
-                  setGameCode(code);
-                  gameCodeRef.current = code;
-                }
-              }
-            } catch {
-              // Skip malformed JSON
-            }
+          const code = extractGameCode(fullText);
+          if (code) {
+            setGameCode(code);
+            gameCodeRef.current = code;
           }
         }
       }
@@ -257,6 +235,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
       console.warn("[GF-HEAL] PROCEEDING with auto-fix attempt", autoFixAttempts.current);
       setIsAutoFixing(true);
       setStreamPhase("auto-fixing");
+      setLastGameErrors(errors.map((e) => e.message));
 
       const errorSummaries = errors.map((e) => {
         let summary = e.message;
@@ -317,52 +296,30 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
         }
 
         // Read SSE stream from fix-game endpoint
-        const reader = res.body?.getReader();
-        if (!reader) throw new Error("No response body");
-
-        const decoder = new TextDecoder();
         let gotResult = false;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        for await (const parsed of readSSEStream(res)) {
+          if (parsed.error) throw new Error(parsed.error);
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const raw = line.slice(6);
-            if (raw === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(raw);
-
-              if (parsed.error) throw new Error(parsed.error);
-
-              if (parsed.result) {
-                const result = JSON.parse(parsed.result);
-                if (result.fixedCode) {
-                  gotResult = true;
-                  setGameCode(result.fixedCode);
-                  gameCodeRef.current = result.fixedCode;
-                  setFixUsage({
-                    input_tokens: result.usage.input_tokens,
-                    output_tokens: result.usage.output_tokens,
-                    credits_used: result.credits_used,
-                  });
-                  const errorList = errors.map((e) => e.message).join("; ");
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      role: "assistant",
-                      content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
-                    },
-                  ]);
-                }
-              }
-            } catch (e) {
-              if (e instanceof Error && e.message) throw e;
+          if (parsed.result) {
+            const result = JSON.parse(parsed.result);
+            if (result.fixedCode) {
+              gotResult = true;
+              setGameCode(result.fixedCode);
+              gameCodeRef.current = result.fixedCode;
+              setFixUsage({
+                input_tokens: result.usage.input_tokens,
+                output_tokens: result.usage.output_tokens,
+                credits_used: result.credits_used,
+              });
+              const errorList = errors.map((e) => e.message).join("; ");
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: `Auto-fix attempt ${autoFixAttempts.current}/2: "${errorList}" (2 credits)`,
+                },
+              ]);
             }
           }
         }
@@ -533,6 +490,7 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           isAutoFixing={isAutoFixing}
           autoFixExhausted={autoFixExhausted}
           onRetry={handleRetry}
+          lastGameErrors={lastGameErrors}
         />
       </div>
 
