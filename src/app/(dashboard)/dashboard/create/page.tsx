@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
+import { extractPatches, applyPatches } from "@/lib/game-patcher";
 import { readSSEStream } from "@/lib/sse-reader";
 import { createClient } from "@/lib/supabase/client";
 import { GAME_TEMPLATES } from "@/lib/game-templates";
@@ -171,22 +172,34 @@ function CreateGameContent() {
           fullText += parsed.text;
           setStreamingText(fullText);
 
-          const code = extractGameCode(fullText);
-          if (code) {
-            setGameCode(code);
-            gameCodeRef.current = code;
+          // Only live-extract game code for NEW games (full file mode).
+          // For iterations (patch mode), keep showing the current working game
+          // until patches are applied after streaming ends.
+          if (!gameCodeRef.current) {
+            const code = extractGameCode(fullText);
+            if (code) {
+              setGameCode(code);
+              gameCodeRef.current = code;
 
-            if (!gameName && updatedMessages.length > 0) {
-              const firstMsg = updatedMessages[0].content;
-              const name = firstMsg.length > 40 ? firstMsg.slice(0, 40) + "..." : firstMsg;
-              setGameName(name);
+              if (!gameName && updatedMessages.length > 0) {
+                const firstMsg = updatedMessages[0].content;
+                const name = firstMsg.length > 40 ? firstMsg.slice(0, 40) + "..." : firstMsg;
+                setGameName(name);
+              }
             }
           }
         }
       }
 
-      // Final extraction pass — handles truncated responses (auto-closes HTML)
-      if (!gameCodeRef.current && fullText.trim()) {
+      // After streaming: apply patches (iterations) or extract full code (new games)
+      const patches = extractPatches(fullText);
+      if (patches.length > 0 && gameCodeRef.current) {
+        // Patch mode: apply search-replace blocks to existing game code
+        const result = applyPatches(gameCodeRef.current, patches);
+        setGameCode(result.code);
+        gameCodeRef.current = result.code;
+      } else if (!gameCodeRef.current && fullText.trim()) {
+        // Full mode fallback: extract complete game code (truncated responses)
         const code = extractGameCode(fullText, false);
         if (code) {
           setGameCode(code);

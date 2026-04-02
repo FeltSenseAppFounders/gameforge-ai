@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatPanel } from "@/features/game-creator/ChatPanel";
 import { GamePreview } from "@/features/game-creator/GamePreview";
 import { extractGameCode } from "@/lib/prompts/game-creator";
+import { extractPatches, applyPatches } from "@/lib/game-patcher";
 import { readSSEStream } from "@/lib/sse-reader";
 import { scanGameCode } from "@/lib/game-scanner";
 import { createClient } from "@/lib/supabase/client";
@@ -164,17 +165,22 @@ export function GameEditor({ game, initialMessages }: GameEditorProps) {
           fullText += parsed.text;
           setStreamingText(fullText);
 
-          const code = extractGameCode(fullText);
-          if (code) {
-            setGameCode(code);
-            gameCodeRef.current = code;
-          }
+          // Only live-extract game code for NEW games (full file mode).
+          // GameEditor always has existing code, so skip live extraction
+          // and apply patches after streaming ends.
         }
       }
 
-      // Final extraction pass — handles truncated responses
-      if (!gameCodeRef.current && fullText.trim()) {
-        const code = extractGameCode(fullText, false);
+      // After streaming: apply patches (iterations) or extract full code
+      const patches = extractPatches(fullText);
+      if (patches.length > 0 && gameCodeRef.current) {
+        // Patch mode: apply search-replace blocks to existing game code
+        const result = applyPatches(gameCodeRef.current, patches);
+        setGameCode(result.code);
+        gameCodeRef.current = result.code;
+      } else {
+        // Full mode fallback: if Claude output a full file instead of patches
+        const code = extractGameCode(fullText) || extractGameCode(fullText, false);
         if (code) {
           setGameCode(code);
           gameCodeRef.current = code;

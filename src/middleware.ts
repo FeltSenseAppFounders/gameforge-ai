@@ -15,6 +15,8 @@ export async function middleware(request: NextRequest) {
   // attribute already provides security isolation. Skip CSP for these routes.
   const isGameRoute =
     request.nextUrl.pathname.startsWith("/dashboard/games/") ||
+    request.nextUrl.pathname.startsWith("/dashboard/create") ||
+    request.nextUrl.pathname.startsWith("/dashboard/community") ||
     request.nextUrl.pathname.startsWith("/play/");
 
   if (!isGameRoute) {
