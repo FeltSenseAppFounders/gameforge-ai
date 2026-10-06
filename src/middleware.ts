@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
 
   // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Content-Security-Policy", "frame-ancestors 'self' https://zero-to-ads-live.vercel.app");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
   // Game routes render Phaser.js in sandboxed srcdoc iframes. Per CSP Level 3,
@@ -25,6 +25,7 @@ export async function middleware(request: NextRequest) {
       "Content-Security-Policy",
       [
         "default-src 'self'",
+        "frame-ancestors 'self' https://zero-to-ads-live.vercel.app",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://js.stripe.com https://va.vercel-scripts.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         `connect-src 'self' https://*.supabase.co https://api.stripe.com https://vitals.vercel-insights.com${isDev ? " http://127.0.0.1:* http://localhost:*" : ""}`,
